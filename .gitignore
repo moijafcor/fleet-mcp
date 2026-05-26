@@ -8,3 +8,6 @@ __pycache__/
 .pytest_cache/
 dist/
 *.egg-info/
+
+# Proprietary fleet reference data — not for public repository
+examples/adswire/

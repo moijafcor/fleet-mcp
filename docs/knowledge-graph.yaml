@@ -1,0 +1,388 @@
+# docs/knowledge-graph.yaml
+# Project-level knowledge graph for fleet-mcp.
+# Extends the Harnessable framework graph at:
+#   docs/harness/vendor/harnessable/KNOWLEDGE_GRAPH.yaml
+#
+# All project-domain concepts are declared here.
+# Raw labels in DIPs are a protocol violation if the concept is absent from this graph.
+
+meta:
+  version: "0.1.0"
+  layer: project
+  extends: docs/harness/vendor/harnessable/KNOWLEDGE_GRAPH.yaml
+  description: >
+    Authoritative concept graph for fleet-mcp — the fleet-level MCP server that
+    maintains a living Knowledge Graph of the AdsWire multi-app SaaS architecture.
+
+namespaces:
+  fleet_mcp:
+    description: >
+      Core concepts of the fleet-mcp MCP server and its data model.
+      All project-domain terms are scoped here.
+    source: internal
+
+  adswire:
+    description: >
+      Domain concepts specific to the AdsWire SaaS fleet — the first proof-of-concept
+      target for fleet-mcp. Terms here describe the real fleet topology being modelled.
+    source: internal
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FLEET-MCP CORE CONCEPTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+concepts:
+
+  fleet_mcp.FleetKnowledgeGraph:
+    type: concept
+    definition: >
+      The in-memory, YAML-backed graph of fleet topology maintained by fleet-mcp.
+      Composed of Services, ApiContracts, SharedDataModels, DeploymentEntries, and
+      Landmines. Loaded at server startup from the fleet/ directory. The canonical
+      data model from which all static layer artifacts derive their format.
+    composed_of:
+      - fleet_mcp.Service
+      - fleet_mcp.ApiContract
+      - fleet_mcp.SharedDataModel
+      - fleet_mcp.DeploymentEntry
+      - fleet_mcp.Landmine
+    backed_by: fleet_mcp.FleetStore
+    served_via: fleet_mcp.MCPTool
+
+  fleet_mcp.FleetStore:
+    type: concept
+    definition: >
+      The in-memory store that holds the loaded FleetKnowledgeGraph at runtime.
+      Implemented as src/store/loader.py::FleetStore. Loaded from YAML files in
+      the fleet/ directory at server startup. Provides query methods for each
+      entity type. A reload re-reads all YAML files without restarting the process.
+    implementation: src/store/loader.py
+    load_source: fleet/
+
+  fleet_mcp.Service:
+    type: concept
+    definition: >
+      A single deployable application in the SaaS fleet. Has a stable ID,
+      a role classification, a tech stack descriptor, URL set (production/staging/local),
+      entry points, and an ownership map (path patterns for impact analysis).
+    properties:
+      id: str  # stable slug, e.g. "api-adswire"
+      name: str  # human label, e.g. "api.adswire.io"
+      role: fleet_mcp.ServiceRole
+      stack: fleet_mcp.ServiceStack
+      urls: fleet_mcp.ServiceUrls
+      entry_points: list[str]
+      owns: fleet_mcp.ServiceOwnership
+      port: Optional[int]
+      description: Optional[str]
+    implementation: src/models/service.py
+    data_source: fleet/services.yaml
+
+  fleet_mcp.ServiceRole:
+    type: harnessable.Enumeration
+    definition: Classification of a service by its function in the fleet.
+    values:
+      mcp-server: AI agent access layer (MCP protocol)
+      saas-dashboard: Client-facing web application
+      ops-portal: Internal operations interface
+      marketing-site: Public marketing presence
+    used_in: fleet_mcp.Service
+
+  fleet_mcp.ServiceStack:
+    type: concept
+    definition: >
+      The technology stack descriptor for a Service. Records language, version,
+      framework, framework version, and any named extras (e.g. MCP SDK version,
+      frontend framework).
+    implementation: src/models/service.py::ServiceStack
+
+  fleet_mcp.ServiceUrls:
+    type: concept
+    definition: >
+      The set of URLs for a Service across environments. Production is required;
+      staging and local are optional.
+    implementation: src/models/service.py::ServiceUrls
+
+  fleet_mcp.ServiceOwnership:
+    type: concept
+    definition: >
+      The set of glob path patterns that a Service owns. Used by
+      fleet_mcp.ImpactAnalysis to determine which services are affected when
+      a given file path is modified.
+    implementation: src/models/service.py::ServiceOwnership
+
+  fleet_mcp.ApiContract:
+    type: concept
+    definition: >
+      A declared interface between two Services: the protocol used, the auth
+      mechanism, the critical config that must stay in sync, and the break risk
+      (what happens if the contract is violated). The from/to fields reference
+      fleet_mcp.Service IDs.
+    properties:
+      id: str
+      from_service: str  # Service.id
+      to_service: str    # Service.id
+      protocol: fleet_mcp.ContractProtocol
+      mechanism: str
+      endpoint: Optional[str]
+      description: str
+      critical_config: list[str]
+      break_risk: Optional[str]
+    implementation: src/models/contract.py
+    data_source: fleet/contracts.yaml
+
+  fleet_mcp.ContractProtocol:
+    type: harnessable.Enumeration
+    definition: The communication protocol of an ApiContract.
+    values:
+      oauth2: OAuth 2.0 authorization flow
+      http-rest: Standard HTTP REST API
+      http-internal: Internal service-to-service HTTP call (not user-facing)
+      mcp-sse: MCP protocol over SSE transport
+      mcp-streamable-http: MCP protocol over Streamable HTTP transport
+    used_in: fleet_mcp.ApiContract
+
+  fleet_mcp.SharedDataModel:
+    type: concept
+    definition: >
+      A data store (database, cache, object store) that is owned by one Service
+      and consumed by one or more others. Documents the ownership boundary,
+      storage type, critical tables, and naming patterns that are cross-app
+      load-bearing invariants.
+    properties:
+      id: str
+      name: str
+      owner_service: str   # Service.id
+      consumer_services: list[str]  # list of Service.ids
+      storage_type: fleet_mcp.StorageType
+      description: str
+      critical_tables: list[str]
+      naming_pattern: Optional[str]
+    implementation: src/models/data_model.py
+    data_source: fleet/data_models.yaml
+
+  fleet_mcp.StorageType:
+    type: harnessable.Enumeration
+    definition: The storage technology backing a SharedDataModel.
+    values:
+      postgresql: PostgreSQL relational database
+      redis: Redis in-memory data store
+      s3: S3-compatible object storage
+    used_in: fleet_mcp.SharedDataModel
+
+  fleet_mcp.DeploymentEntry:
+    type: concept
+    definition: >
+      The runtime topology entry for a Service in a given environment. Records
+      host, internal IP, port, process invocation, and operational notes.
+    properties:
+      service_id: str  # Service.id
+      environment: str  # "production" | "staging" | "local"
+      host: str
+      internal_ip: Optional[str]
+      port: int
+      process: str
+      notes: Optional[str]
+    implementation: src/models/deployment.py
+    data_source: fleet/deployment.yaml
+
+  fleet_mcp.Landmine:
+    type: concept
+    definition: >
+      A documented cross-app breakage risk — a change to one Service that will
+      silently or immediately break one or more other Services if made naively.
+      Each Landmine has a severity, a trigger description, a consequence, and a
+      remedy. The primary output of fleet-level architectural knowledge transfer.
+    properties:
+      id: str
+      affected_services: list[str]  # list of Service.ids
+      trigger: str
+      severity: fleet_mcp.LandmineSeverity
+      consequence: str
+      remedy: str
+      related_config: list[str]  # env var names
+    implementation: src/models/landmine.py
+    data_source: fleet/landmines.yaml
+
+  fleet_mcp.LandmineSeverity:
+    type: harnessable.Enumeration
+    definition: >
+      The impact severity of triggering a Landmine. Critical means immediate,
+      total failure across affected services. Low means degraded experience
+      only.
+    values:
+      critical: Immediate total failure of affected service(s)
+      high: Significant functional degradation; requires prompt remediation
+      medium: Degraded experience; self-corrects or can wait for next deploy
+      low: Minor friction; no functional regression
+    used_in: fleet_mcp.Landmine
+
+  fleet_mcp.MCPTool:
+    type: concept
+    definition: >
+      A FastMCP-registered tool function that exposes a fleet_mcp.FleetKnowledgeGraph
+      query to an agent session. Each tool is a pure read of the FleetStore.
+      Tool names are prefixed with fleet_ to distinguish them from api.adswire.io
+      tools in the same Claude Desktop session.
+    tool_registry:
+      fleet_get_topology: fleet_mcp.TopologyTool
+      fleet_get_api_contract: fleet_mcp.ContractTool
+      fleet_get_shared_data_model: fleet_mcp.DataModelTool
+      fleet_get_deployment_map: fleet_mcp.DeploymentTool
+      fleet_check_cross_app_impact: fleet_mcp.ImpactTool
+    implementation: src/tools/
+
+  fleet_mcp.TopologyTool:
+    type: fleet_mcp.MCPTool
+    label: fleet_get_topology
+    definition: Returns all fleet_mcp.Service entries with role, stack, and URLs.
+    signature: "fleet_get_topology() -> dict"
+    implementation: src/tools/topology.py
+
+  fleet_mcp.ContractTool:
+    type: fleet_mcp.MCPTool
+    label: fleet_get_api_contract
+    definition: >
+      Returns all fleet_mcp.ApiContract entries between two named services.
+      Accepts service IDs. Returns bidirectional contracts if from→to has none.
+    signature: "fleet_get_api_contract(from_service: str, to_service: str) -> dict"
+    implementation: src/tools/contracts.py
+
+  fleet_mcp.DataModelTool:
+    type: fleet_mcp.MCPTool
+    label: fleet_get_shared_data_model
+    definition: Returns all fleet_mcp.SharedDataModel entries.
+    signature: "fleet_get_shared_data_model() -> dict"
+    implementation: src/tools/data_model.py
+
+  fleet_mcp.DeploymentTool:
+    type: fleet_mcp.MCPTool
+    label: fleet_get_deployment_map
+    definition: >
+      Returns fleet_mcp.DeploymentEntry records, optionally filtered by environment.
+    signature: "fleet_get_deployment_map(environment: str | None = None) -> dict"
+    implementation: src/tools/deployment.py
+
+  fleet_mcp.ImpactTool:
+    type: fleet_mcp.MCPTool
+    label: fleet_check_cross_app_impact
+    definition: >
+      Given a file path, returns the owning Service(s), affected ApiContracts,
+      and Landmines. Uses glob pattern matching against fleet_mcp.ServiceOwnership
+      path_patterns declared in fleet/services.yaml.
+    signature: "fleet_check_cross_app_impact(file_path: str) -> dict"
+    implementation: src/tools/impact.py
+
+  fleet_mcp.ImpactAnalysis:
+    type: concept
+    definition: >
+      The result of a fleet_check_cross_app_impact query. Includes owning services,
+      impacted contracts, triggered landmines, and a cross_app_risk rating
+      (none | low | medium | high).
+    output_of: fleet_mcp.ImpactTool
+    cross_app_risk_values:
+      none: No ownership mapping found for the path
+      low: Path is owned but no contracts or landmines reference it
+      medium: Path touches a contract boundary
+      high: Path has associated Landmines
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADSWIRE FLEET DOMAIN CONCEPTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  adswire.ApiService:
+    type: fleet_mcp.Service
+    id: api-adswire
+    label: api.adswire.io
+    definition: >
+      The AdsWire MCP server. FastAPI/Python. Serves Claude Desktop via
+      Streamable HTTP + SSE transports. Auth via Laravel Passport tokens.
+      Provides Google Ads and Meta Ads tool sets.
+    role: mcp-server
+    port: 8095
+
+  adswire.AppService:
+    type: fleet_mcp.Service
+    id: app-adswire
+    label: app.adswire.io
+    definition: >
+      The AdsWire client dashboard. Laravel 12 / Jetstream / Livewire 4.
+      OAuth 2.0 authorization server (Laravel Passport). Tenant management,
+      team management, subscription management, onboarding.
+    role: saas-dashboard
+    port: 80
+
+  adswire.ConsoleService:
+    type: fleet_mcp.Service
+    id: console-adswire
+    label: console.adswire.io
+    definition: >
+      Internal ops portal. Tenant activation workflow, plan assignment.
+      Multi-tenant read access to the landlord DB.
+    role: ops-portal
+    port: 80
+
+  adswire.WwwService:
+    type: fleet_mcp.Service
+    id: www-adswire
+    label: www.adswire.io
+    definition: Marketing landing page.
+    role: marketing-site
+    port: 8091
+
+  adswire.LandlordDatabase:
+    type: fleet_mcp.SharedDataModel
+    id: landlord-db
+    definition: >
+      Shared PostgreSQL database containing tenant registrations, team memberships,
+      OAuth access tokens, personal access tokens, and subscription plans.
+      Owned by app.adswire.io (Laravel migrations). Consumed by api. and console.
+      for authentication and tenant lookup.
+
+  adswire.TenantDatabase:
+    type: fleet_mcp.SharedDataModel
+    id: tenant-db
+    definition: >
+      Per-tenant PostgreSQL databases for campaign data, platform credentials,
+      and governance policies. Naming convention: adswire_tenant_{tenant_uuid}.
+      The naming prefix is a load-bearing invariant — changing it without
+      renaming all existing databases causes immediate, total failure.
+
+  adswire.PassportKeyRotationLandmine:
+    type: fleet_mcp.Landmine
+    id: passport-key-rotation
+    severity: fleet_mcp.LandmineSeverity.critical
+    definition: >
+      Rotating Laravel Passport keys in app. without updating
+      ADSWIRE_PASSPORT_PUBLIC_KEY in api. causes all MCP auth to fail with 401.
+
+  adswire.InternalSecretLandmine:
+    type: fleet_mcp.Landmine
+    id: internal-secret-rotation
+    severity: fleet_mcp.LandmineSeverity.high
+    definition: >
+      Mismatched ADSWIRE_INTERNAL_SECRET between app. and api. silently breaks
+      governance policy cache invalidation.
+
+  adswire.RedisFlushLandmine:
+    type: fleet_mcp.Landmine
+    id: redis-flush
+    severity: fleet_mcp.LandmineSeverity.medium
+    definition: >
+      Redis flush drops all active MCP sessions and resets trial tool call counters.
+
+  adswire.TenantDbPrefixLandmine:
+    type: fleet_mcp.Landmine
+    id: tenant-db-prefix-change
+    severity: fleet_mcp.LandmineSeverity.critical
+    definition: >
+      Changing TENANT_DB_NAME_PREFIX without renaming all existing tenant DBs
+      causes immediate, total failure of all per-tenant tool calls.
+
+  adswire.EncryptionKeyLandmine:
+    type: fleet_mcp.Landmine
+    id: sanctum-encryption-key-rotation
+    severity: fleet_mcp.LandmineSeverity.critical
+    definition: >
+      Rotating ADSWIRE_ENCRYPTION_KEY without re-encrypting stored credentials
+      makes all platform credentials undecryptable.

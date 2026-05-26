@@ -1,3 +1,10 @@
 # .gitignore
 .harnessable/
 .claude/
+__pycache__/
+*.pyc
+.env
+.mypy_cache/
+.pytest_cache/
+dist/
+*.egg-info/

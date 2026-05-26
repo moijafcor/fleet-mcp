@@ -1503,7 +1503,7 @@ The `examples/adswire/` directory in the fleet-mcp repo serves as the reference 
 
 | Task URL | Title | Reason Created | Status |
 | --- | --- | --- | --- |
-| — | — | — | — |
+| https://github.com/users/moijafcor/projects/2?pane=issue&itemId=PVTI_lAHOAAu2cM4BYTLXzgty0cg | [OSF-001] fleet_get_api_contract: empty service IDs return all contracts without warning | QA spot check — empty string bypasses FleetStore.get_contracts() filters | Backlog |
 
 ---
 
@@ -1629,22 +1629,78 @@ loaded ok
 
 ## QA Verdict
 
-*QA fills this section after reviewing TIR and re-executing checks.*
-
-**Verdict:** [PASS | CONDITIONAL_PASS | FAIL]
-**QA Agent:** [identifier]
-**Date:** [ISO date]
+**Verdict:** FAIL
+**QA Agent:** claude-sonnet-4-6 / QA session 2026-05-26
+**Date:** 2026-05-26
 
 ### Checks Executed
+
 | Check | Result | Evidence |
 |---|---|---|
-| [check description] | PASS / FAIL | [log line, output, observation] |
+| git status — working tree clean | **FAIL** | Two DIP-in-scope files untracked: `.env.example`, `docs/knowledge-graph.yaml`. Neither appears in commits ab7ebce or 97d240d. |
+| git log — SHAs match TIR | PASS | ab7ebce and 97d240d present in `git log --oneline -10`. |
+| git show HEAD — commit message matches diff | PASS | 97d240d modifies only the DIP file (TIR + checklist update). Title accurately describes change. |
+| `python3 -m pytest tests/ -x -v --tb=short` | PASS | `17 passed in 0.16s`. Test names match TIR evidence exactly including renamed `test_contract_direct_api_to_app`. |
+| `ruff check src/ tests/` | PASS | `All checks passed!` |
+| `mypy src/` | PASS (env-dependent — see Finding 2) | `Success: no issues found in 18 source files`. Passes only because `types-PyYAML` is installed system-wide. Not reproducible from `pyproject.toml [dev]` alone. |
+| Server imports cleanly, 5 tools registered | PASS | `server importable, tools: 5 / tool names: ['fleet_get_topology', 'fleet_get_api_contract', 'fleet_get_shared_data_model', 'fleet_get_deployment_map', 'fleet_check_cross_app_impact']` |
+| `fleet_get_topology()` — 4 services, non-empty role/stack/urls | PASS | `topology service_count=4 ids=['api-adswire', 'app-adswire', 'console-adswire', 'www-adswire']` all roles/stacks/urls present. |
+| `fleet_get_api_contract("app-adswire", "api-adswire")` — ≥1 contract, no warning | PASS | `contracts=2 warning=False` |
+| `fleet_get_api_contract("api-adswire", "app-adswire")` — direct match, no warning [DEVIATION 006] | PASS | `contracts=1 warning=False` (api-to-app-policy-invalidation direct match confirmed) |
+| `fleet_get_api_contract("api-adswire", "www-adswire")` — empty list + warning | PASS | `contracts=[] warning=True` |
+| `fleet_get_shared_data_model()` — landlord-db, tenant-db, redis-session-store | PASS | `count=3 ids={'tenant-db', 'landlord-db', 'redis-session-store'}` |
+| `fleet_get_deployment_map(environment="production")` — only production entries | PASS | `count=4 all_prod=True` |
+| `fleet_check_cross_app_impact("api.adswire.io/auth/sanctum.py")` — api-adswire owner, risk=high | PASS | `owning=['api-adswire'] risk=high` |
+| `fleet_check_cross_app_impact("some/unrelated/file.py")` — risk=none + warning | PASS | `risk=none warning=True` |
+| No secrets in fleet YAML | PASS | grep for credential patterns returned only env var name references (e.g. `ADSWIRE_PASSPORT_PUBLIC_KEY`), no actual values. |
+| 5 landmines in examples/adswire/landmines.yaml | PASS | `5 landmines` |
+| 4 services in examples/adswire/services.yaml | PASS | `4 services` |
+| FleetStore loads without pydantic ValidationError | PASS | `loaded ok` |
+| README contains "Wiring to Claude Desktop" | PASS | `grep -c` returns `1` |
+| `python3 -m src.server` starts without error | PASS | stdio transport blocks on stdin — confirmed no crash on startup (consistent with TIR note). |
+| Knowledge graph content — all DIP concepts present | PASS | `docs/knowledge-graph.yaml` content reviewed; all fleet_mcp.* and adswire.* concepts from DIP are declared. File is untracked (see Finding 1). |
 
 ### Findings
 
+#### Finding 1 — PRIMARY FAIL: Two DIP-in-scope files not committed to git
+
+**Files affected:** `.env.example`, `docs/knowledge-graph.yaml`
+
+**Evidence:** `git status` reports both as untracked. `git show --stat ab7ebce` confirms neither appears in the implementation commit. `git show --stat 97d240d` confirms neither appears in the TIR commit. Neither is excluded by `.gitignore`. The board was set to IN_REVIEW with these files uncommitted.
+
+**DIP scope reference:**
+- `.env.example` — explicitly listed in Step 1 scope: "`.env.example` — documented env vars"
+- `docs/knowledge-graph.yaml` — declared resolved in Field Discovery #1: "Resolved: docs/knowledge-graph.yaml created with full fleet_mcp and adswire namespaces before DIP authoring." Referenced by the committed `AGENTS.md` under `## Knowledge Graph`.
+
+**Protocol violated:** State-machine invariant 10 (Git-clean-before-IN_REVIEW): "All mandate work must be committed with accurate commit messages. No staged or unstaged changes may remain."
+
+**Severity:** Primary FAIL. The codebase as committed is incomplete — two deliverables exist only in the working tree, not in version history.
+
+---
+
+#### Finding 2 — SECONDARY FAIL: DEVIATION 007 resolution is incomplete — `types-PyYAML` missing from `pyproject.toml`
+
+**Evidence:** `pyproject.toml [project.optional-dependencies] dev` contains only `ruff` and `mypy`. `types-PyYAML` is not listed. `pip show types-PyYAML` confirms the package is installed system-wide (v6.0.12.20260518) but only because the Coder installed it manually during the session.
+
+**Impact:** `pip install .[dev] && mypy src/` on a clean environment will fail with missing stubs for the `yaml` module — the REQUIRED mypy check is not reproducible from the committed project definition.
+
+**Coder's stated rationale (DEVIATION 007):** "Not adding it here to minimise DIP-scope drift — flagging for Architect." This is an incomplete resolution. The REQUIRED mypy gate (`mypy src/ exits 0`) is satisfied in the current environment but is not satisfied by the committed `pyproject.toml`. A dependency that must be installed for a REQUIRED gate to pass must appear in the project's declared dependencies.
+
+**Severity:** Secondary FAIL. The mypy check passes today only due to environmental state that is not captured in version control.
+
 ### Out-of-Scope Findings
 
+#### OSF-001: `get_api_contract("", "")` returns all contracts without warning
+
+**Evidence (QA spot check):** `get_api_contract("", "", store)` returns all 3 contracts (`contracts=<all 3>`, `warning=False`) because `FleetStore.get_contracts()` treats empty string as falsy, skipping both filter branches. An empty service ID is not a valid query but is silently treated as "no filter."
+
+**Impact:** Not a DMT acceptance criterion. Does not affect any declared use case. Informational only.
+
+**Action:** Child task created on board as a follow-on defect. Does not affect this verdict.
+
 ### Verdict Rationale
+
+Two REQUIRED checks are failed: (1) `.env.example` and `docs/knowledge-graph.yaml` are in-scope deliverables that were never committed — the mandate is incomplete as measured by git history; (2) `types-PyYAML` is absent from `pyproject.toml [dev]`, making the REQUIRED mypy gate non-reproducible on a clean install. All functional checks pass and DEVIATION 006 is cleanly resolved, but the git state violation alone is sufficient to mandate a FAIL per protocol.
 
 ---
 

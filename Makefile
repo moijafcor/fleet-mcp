@@ -4,7 +4,7 @@ run:
 	python -m src.server
 
 run-example:
-	FLEET_DATA_DIR=examples/adswire python -m src.server
+	FLEET_DATA_DIR=tests/fixtures/example-fleet python -m src.server
 
 test:
 	python -m pytest tests/ -x -q --tb=short

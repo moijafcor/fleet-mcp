@@ -4,27 +4,27 @@ from pathlib import Path
 _TEMPLATES: dict[str, str] = {
     "services.yaml": (
         "# Fleet services — one entry per deployable application.\n"
-        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/examples/adswire/services.yaml\n"
+        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/tests/fixtures/example-fleet/services.yaml\n"
         "[]\n"
     ),
     "contracts.yaml": (
         "# API contracts between services.\n"
-        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/examples/adswire/contracts.yaml\n"
+        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/tests/fixtures/example-fleet/contracts.yaml\n"
         "[]\n"
     ),
     "data_models.yaml": (
         "# Shared data models (databases, caches, object stores).\n"
-        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/examples/adswire/data_models.yaml\n"
+        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/tests/fixtures/example-fleet/data_models.yaml\n"
         "[]\n"
     ),
     "deployment.yaml": (
         "# Deployment entries — one per service per environment.\n"
-        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/examples/adswire/deployment.yaml\n"
+        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/tests/fixtures/example-fleet/deployment.yaml\n"
         "[]\n"
     ),
     "landmines.yaml": (
         "# Cross-app breakage risks.\n"
-        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/examples/adswire/landmines.yaml\n"
+        "# Schema: https://github.com/moijafcor/fleet-mcp/blob/main/tests/fixtures/example-fleet/landmines.yaml\n"
         "[]\n"
     ),
 }

@@ -1,0 +1,35 @@
+- id: landlord-db
+  name: Landlord Database
+  owner_service: svc-app
+  consumer_services:
+    - svc-api
+    - svc-console
+  storage_type: postgresql
+  description: >
+    Shared PostgreSQL database for tenant registrations, team memberships,
+    OAuth access tokens, and subscription plans.
+  critical_tables:
+    - tenants
+    - teams
+    - oauth_access_tokens
+    - subscriptions
+
+- id: tenant-db
+  name: Per-Tenant Database
+  owner_service: svc-api
+  consumer_services: []
+  storage_type: postgresql
+  naming_pattern: "example_tenant_{id}"
+  description: >
+    Per-tenant PostgreSQL databases for platform credentials and governance policies.
+  critical_tables:
+    - platform_credentials
+    - governance_policies
+
+- id: cache-store
+  name: Cache Store
+  owner_service: svc-api
+  consumer_services: []
+  storage_type: redis
+  description: >
+    Redis used by svc-api for session state, trial tracking, and policy cache.

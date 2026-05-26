@@ -5,21 +5,21 @@ def test_services_loaded(store: FleetStore) -> None:
     services = store.get_services()
     assert len(services) >= 4
     ids = {s.id for s in services}
-    assert "api-adswire" in ids
-    assert "app-adswire" in ids
+    assert "svc-api" in ids
+    assert "svc-app" in ids
 
 
 def test_get_service_by_id(store: FleetStore) -> None:
-    svc = store.get_service("api-adswire")
+    svc = store.get_service("svc-api")
     assert svc is not None
     assert svc.role == "mcp-server"
     assert svc.port == 8095
 
 
 def test_get_contracts(store: FleetStore) -> None:
-    contracts = store.get_contracts(from_service="app-adswire", to_service="api-adswire")
+    contracts = store.get_contracts(from_service="svc-app", to_service="svc-api")
     assert len(contracts) >= 1
-    assert contracts[0].from_service == "app-adswire"
+    assert contracts[0].from_service == "svc-app"
 
 
 def test_get_data_models(store: FleetStore) -> None:
@@ -39,14 +39,14 @@ def test_get_deployments(store: FleetStore) -> None:
 def test_get_landmines(store: FleetStore) -> None:
     all_lm = store.get_landmines()
     assert len(all_lm) >= 5
-    api_lm = store.get_landmines(service_id="api-adswire")
-    assert all("api-adswire" in lm.affected_services for lm in api_lm)
+    api_lm = store.get_landmines(service_id="svc-api")
+    assert all("svc-api" in lm.affected_services for lm in api_lm)
 
 
 def test_get_services_owning_path(store: FleetStore) -> None:
-    matching = store.get_services_owning_path("api.adswire.io/auth/sanctum.py")
+    matching = store.get_services_owning_path("api.example.com/auth/handler.py")
     assert len(matching) == 1
-    assert matching[0].id == "api-adswire"
+    assert matching[0].id == "svc-api"
 
 
 def test_unmapped_path_returns_empty(store: FleetStore) -> None:

@@ -11,27 +11,25 @@ async def test_topology_returns_all_services(store: FleetStore) -> None:
     assert result["service_count"] >= 4
     assert isinstance(result["fleet"], list)
     ids = {svc["id"] for svc in result["fleet"]}
-    assert "api-adswire" in ids
+    assert "svc-api" in ids
 
 
 async def test_contract_found(store: FleetStore) -> None:
-    result = await get_api_contract("app-adswire", "api-adswire", store)
+    result = await get_api_contract("svc-app", "svc-api", store)
     assert "contracts" in result
     assert len(result["contracts"]) >= 1
     assert "warning" not in result
 
 
 async def test_contract_direct_api_to_app(store: FleetStore) -> None:
-    # [DEVIATION 006] api-to-app-policy-invalidation provides a direct match;
-    # reverse-fallback path is not exercisable with current reference data.
-    result = await get_api_contract("api-adswire", "app-adswire", store)
+    result = await get_api_contract("svc-api", "svc-app", store)
     assert "contracts" in result
     assert len(result["contracts"]) >= 1
     assert "warning" not in result
 
 
 async def test_contract_not_found(store: FleetStore) -> None:
-    result = await get_api_contract("api-adswire", "www-adswire", store)
+    result = await get_api_contract("svc-api", "svc-www", store)
     assert result["contracts"] == []
     assert "warning" in result
 
@@ -56,9 +54,9 @@ async def test_deployment_map_filtered(store: FleetStore) -> None:
 
 async def test_impact_known_path(store: FleetStore) -> None:
     result = await check_cross_app_impact(
-        "api.adswire.io/auth/sanctum.py", store
+        "api.example.com/auth/handler.py", store
     )
-    assert "api-adswire" in result["owning_services"]
+    assert "svc-api" in result["owning_services"]
     assert result["cross_app_risk"] in ("low", "medium", "high")
 
 

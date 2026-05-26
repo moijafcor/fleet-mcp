@@ -1,0 +1,31 @@
+- service_id: svc-api
+  environment: production
+  host: prod-server.example.com
+  internal_ip: "10.0.0.2"
+  port: 8095
+  process: uvicorn (Docker)
+  notes: Accessible via VPN at 10.0.0.2:8095.
+
+- service_id: svc-app
+  environment: production
+  host: prod-server.example.com
+  internal_ip: "10.0.0.2"
+  port: 8080
+  process: php-fpm + nginx
+  notes: nginx proxies app.example.com to port 8080.
+
+- service_id: svc-console
+  environment: production
+  host: prod-server.example.com
+  internal_ip: "10.0.0.2"
+  port: 8081
+  process: php-fpm + nginx
+  notes: nginx proxies console.example.com to port 8081.
+
+- service_id: svc-www
+  environment: production
+  host: prod-server.example.com
+  internal_ip: "10.0.0.2"
+  port: 8091
+  process: uvicorn landing.py
+  notes: Marketing landing page process.

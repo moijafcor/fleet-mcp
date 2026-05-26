@@ -1,0 +1,40 @@
+- id: app-to-api-auth
+  from_service: svc-app
+  to_service: svc-api
+  protocol: oauth2
+  mechanism: passport
+  description: >
+    svc-app is the OAuth 2.0 authorisation server.
+    svc-api validates Passport access tokens via shared public key.
+  critical_config:
+    - EXAMPLE_PASSPORT_PUBLIC_KEY
+  break_risk: >
+    Rotating Passport keys without updating EXAMPLE_PASSPORT_PUBLIC_KEY
+    in svc-api causes all MCP authentication to fail immediately.
+
+- id: api-to-app-cache-invalidation
+  from_service: svc-api
+  to_service: svc-app
+  protocol: http-internal
+  mechanism: x-internal-secret
+  endpoint: POST /internal/tenants/{id}/invalidate-cache
+  description: >
+    svc-api calls svc-app to invalidate the governance policy cache
+    when a tenant admin changes tier assignment.
+  critical_config:
+    - EXAMPLE_INTERNAL_SECRET
+  break_risk: >
+    Mismatched EXAMPLE_INTERNAL_SECRET causes silent cache invalidation failure.
+
+- id: app-to-google-oauth
+  from_service: svc-app
+  to_service: svc-api
+  protocol: oauth2
+  mechanism: google-oauth2
+  endpoint: https://app.example.com/platforms/google/callback
+  description: svc-app brokers Google OAuth 2.0 for ad platform access.
+  critical_config:
+    - EXAMPLE_GOOGLE_CLIENT_ID
+    - EXAMPLE_GOOGLE_CLIENT_SECRET
+  break_risk: >
+    Changing redirect URIs without updating the GCP OAuth client breaks the callback.

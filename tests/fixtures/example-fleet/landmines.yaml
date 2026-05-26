@@ -1,0 +1,71 @@
+- id: passport-key-rotation
+  affected_services:
+    - svc-api
+  trigger: >
+    Rotating Passport keys in svc-app without updating
+    EXAMPLE_PASSPORT_PUBLIC_KEY in svc-api in the same deploy window.
+  severity: critical
+  consequence: >
+    All MCP authentication fails immediately with 401. Every agent session
+    that tries to connect is rejected. Affects all tenants simultaneously.
+  remedy: >
+    1. Stage new key in svc-api config.
+    2. Rotate keys in svc-app.
+    3. Deploy svc-api with new key.
+  related_config:
+    - EXAMPLE_PASSPORT_PUBLIC_KEY
+
+- id: internal-secret-mismatch
+  affected_services:
+    - svc-api
+    - svc-app
+  trigger: >
+    Changing EXAMPLE_INTERNAL_SECRET in one service without updating the other.
+  severity: high
+  consequence: >
+    Cache invalidation fails silently. Tier changes do not propagate until restart.
+  remedy: >
+    Update EXAMPLE_INTERNAL_SECRET in both services and restart in the same window.
+  related_config:
+    - EXAMPLE_INTERNAL_SECRET
+
+- id: redis-flush
+  affected_services:
+    - svc-api
+  trigger: Flushing the Redis cache store without prior session drain.
+  severity: critical
+  consequence: >
+    All active MCP sessions are dropped. Trial counters reset to zero.
+    Users must reconnect; trial limits may be inadvertently reset.
+  remedy: >
+    Drain active sessions gracefully before any Redis maintenance.
+  related_config: []
+
+- id: tenant-db-prefix-change
+  affected_services:
+    - svc-api
+  trigger: Changing EXAMPLE_TENANT_DB_PREFIX without renaming existing databases.
+  severity: critical
+  consequence: >
+    All authenticated tool calls fail immediately; tenant databases become unreachable.
+  remedy: >
+    Rename all existing tenant databases to match the new prefix before deploying.
+  related_config:
+    - EXAMPLE_TENANT_DB_PREFIX
+
+- id: shared-db-migration-without-coordination
+  affected_services:
+    - svc-app
+    - svc-api
+    - svc-console
+  trigger: >
+    Running destructive migrations on landlord-db without coordinating
+    downtime across all three consumers.
+  severity: high
+  consequence: >
+    svc-api and svc-console may reference removed columns or tables,
+    causing runtime errors for all authenticated requests.
+  remedy: >
+    Coordinate a maintenance window across all consumers before running
+    any destructive migration on landlord-db.
+  related_config: []

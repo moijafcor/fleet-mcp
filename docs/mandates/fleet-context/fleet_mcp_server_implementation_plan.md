@@ -1496,6 +1496,7 @@ The `examples/adswire/` directory in the fleet-mcp repo serves as the reference 
 | 5 | 2026-05-25 | Architect | ARCH_DECISION | Original DIP collocated AdsWire YAML in `fleet/` inside the fleet-mcp repo, making the package AdsWire-specific and undeployable against any other fleet without forking. Architect confirmed fleet-mcp must be a generic engine. | Resolved: DIP amended — AdsWire YAML moved to `examples/adswire/` as a schema reference. `src/cli.py` `fleet-mcp init` scaffolds blank templates into any project. `FLEET_DATA_DIR` is the runtime data pointer. ADR-006 documents the decision. |
 | 6 | 2026-05-26 | Coder | DEVIATION | DIP test `test_contract_reverse_fallback` calls `get_api_contract("api-adswire", "app-adswire")` and expects a warning about reverse direction. However, the DIP YAML also specifies `api-to-app-policy-invalidation` (from_service=api-adswire, to_service=app-adswire), so the direct lookup SUCCEEDS and returns no warning. The DIP's test and YAML are mutually exclusive for this scenario: the test requires no direct api→app contract but the YAML provides one. Resolution: Test updated to `test_contract_direct_api_to_app` asserting the direct match is returned without warning. Reverse-fallback code path is correct and exercised by the function logic; it cannot be tested with the current reference data without fabricating unrealistic domain data. Verification checklist item "returns a warning about reverse direction" updated accordingly. See [DEVIATION 006] annotation on Step 8. |
 | 7 | 2026-05-26 | Coder | DEVIATION | DIP specifies `strict = true` in mypy config (pyproject.toml) but all five tool functions and all five server tool wrappers use bare `-> dict:` return type. Strict mode requires `-> dict[str, Any]:`. Additionally, `yaml` (PyYAML) ships no bundled type stubs; `types-PyYAML` must be installed separately for mypy to pass. Resolution: (1) All tool and server function signatures updated from `-> dict:` to `-> dict[str, Any]:` with `from typing import Any` imports added. (2) `types-PyYAML` installed via pip. The DIP's `pyproject.toml` does not list `types-PyYAML` in dev dependencies; it should be added. Not adding it here to minimise DIP-scope drift — flagging for Architect. See [DEVIATION 007] annotation on Steps 5, 6. |
+| 8 | 2026-05-26 | Coder | DEVIATION | Remediation session: SecretsGuard pre-tool-use hook (`docs/harness/hooks/run.py`) blocks any Bash command whose text contains the string `.env.example`. This prevents automated `git add .env.example` staging. The hook message explicitly states: "If this command is intentional, have a human run it outside the agent session." The file content is a non-sensitive template (only env var names, no actual values). Resolution: `docs/knowledge-graph.yaml` and `pyproject.toml` were committed in commit `0226fe1`. `.env.example` requires a manual human `git add` + commit. DEVIATION — cannot fully close Finding 1 via automated means. Human action required; see Tracker Ops Log. |
 
 ---
 
@@ -1517,6 +1518,8 @@ The `examples/adswire/` directory in the fleet-mcp repo serves as the reference 
 | 2026-05-26T00:00:00Z | Set board status IN_PROGRESS | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | option In progress (id=47fc9ee4) | Done — confirmed via GraphQL updateProjectV2ItemFieldValue |
 | 2026-05-26T00:00:00Z | Set board status IN_REVIEW | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | option In review (id=df73e18b) | Done — confirmed via GraphQL updateProjectV2ItemFieldValue |
 | 2026-05-26T00:00:00Z | Add board comment (TIR) | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | "Implementation complete. TIR in DIP at docs/mandates/fleet-context/fleet_mcp_server_implementation_plan.md." | Not done — item is a DraftIssue (id DI_lAHOAAu2cM4BYTLXzgKinCY); draft items have no comment thread via GitHub API. Logged here per protocol. |
+| 2026-05-26T01:45:00Z | QA verdict received | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | FAIL — two findings: (1) .env.example and docs/knowledge-graph.yaml uncommitted; (2) types-PyYAML absent from pyproject.toml [dev]. Board already at In progress (no status change needed). | Board was already "In progress" when remediation Coder session started. |
+| 2026-05-26T01:45:00Z | Commit remediation (partial) | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | Committed docs/knowledge-graph.yaml + pyproject.toml in commit 0226fe1. .env.example blocked by SecretsGuard hook — requires human manual commit (DEVIATION 008). | Done (partial). |
 
 ---
 
@@ -1701,6 +1704,69 @@ loaded ok
 ### Verdict Rationale
 
 Two REQUIRED checks are failed: (1) `.env.example` and `docs/knowledge-graph.yaml` are in-scope deliverables that were never committed — the mandate is incomplete as measured by git history; (2) `types-PyYAML` is absent from `pyproject.toml [dev]`, making the REQUIRED mypy gate non-reproducible on a clean install. All functional checks pass and DEVIATION 006 is cleanly resolved, but the git state violation alone is sufficient to mandate a FAIL per protocol.
+
+---
+
+## Task Implementation Report — Remediation Session
+
+### Session
+- **Coder:** claude-sonnet-4-6 / Coder session 2026-05-26 (remediation)
+- **Start:** 2026-05-26T01:30:00Z
+- **Trigger:** QA verdict FAIL — two findings
+
+### Summary
+
+QA Finding 2 fully resolved: `types-PyYAML>=6.0.0` added to `[project.optional-dependencies].dev` in `pyproject.toml` (commit `0226fe1`). QA Finding 1 partially resolved: `docs/knowledge-graph.yaml` committed in the same commit. `.env.example` cannot be staged by automated means — SecretsGuard pre-tool-use hook blocks any Bash command containing the string `.env.example` (DEVIATION 008). Human must manually execute `git add .env.example && git commit` to complete Finding 1. All 17 tests pass, ruff clean, mypy clean after the fix.
+
+### Implementation Notes
+
+- DEVIATION 008 filed: SecretsGuard hook pattern-matches `.env.example` in command text and blocks `git add`. The file is a non-sensitive env-var template. Hook message instructs human to run the command outside the agent session.
+- `docs/knowledge-graph.yaml` and `pyproject.toml` staged and committed cleanly (neither triggered the hook).
+- Commit `0226fe1` contains both: 388-line knowledge graph addition + 1-line pyproject.toml fix.
+- Completion gate (`python3 -m pytest tests/ -x -q --tb=short`) passes: 17 passed in 0.17s.
+- `ruff check src/ tests/`: All checks passed.
+- `FLEET_DATA_DIR=examples/adswire mypy src/`: Success: no issues found in 18 source files.
+
+### Evidence
+
+```
+python3 -m pytest tests/ -x -q --tb=short
+.................
+17 passed in 0.17s
+
+ruff check src/ tests/
+All checks passed!
+
+mypy src/
+Success: no issues found in 18 source files
+
+git show --stat HEAD
+commit 0226fe1097535331b6799580507ef6fcbbdc8ad4
+ docs/knowledge-graph.yaml | 388 ++++++++++++++++++++++++++++++++++++++++++++++
+ pyproject.toml            |   1 +
+ 2 files changed, 389 insertions(+)
+
+git status
+Untracked files:
+  .env.example     ← requires manual human commit (DEVIATION 008)
+```
+
+### Blockers (open)
+
+- **DEVIATION 008 — SecretsGuard blocks automated staging of `.env.example`.**
+  File is a non-sensitive template. Human must run outside the agent session:
+  ```bash
+  git add .env.example
+  git commit -m "fix(qa): track env-example template (QA Finding 1 remainder)"
+  ```
+  After this commit, `git status` will be clean and the Exit Gate is satisfied.
+
+### Verification Checklist — Remediation Coder Sign-Off
+- [x] QA Finding 2 fully resolved: types-PyYAML in pyproject.toml [dev]
+- [x] QA Finding 1 partially resolved: docs/knowledge-graph.yaml committed
+- [x] DEVIATION 008 documented: .env.example requires manual human commit
+- [x] Completion gate passes (17/17 tests, ruff clean, mypy clean)
+- [ ] Git status clean — blocked on DEVIATION 008 human action
 
 ---
 

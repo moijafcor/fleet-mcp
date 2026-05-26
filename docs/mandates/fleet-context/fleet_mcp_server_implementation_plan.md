@@ -1514,6 +1514,9 @@ The `examples/adswire/` directory in the fleet-mcp repo serves as the reference 
 | 2026-05-25T00:00:00Z | Set board status IN_RECON | moijafcor/projects/2 item 192012347 | No IN_RECON option on this board. Closest = no change from Backlog. | No — board has no IN_RECON status |
 | 2026-05-25T00:00:00Z | Set board status PLANNED | moijafcor/projects/2 item 192012347 | Option "Ready" (id=61e4505c) is the closest equivalent to PLANNED | Pending — execute after DIP handoff; requires write:project scope |
 | 2026-05-25T00:00:00Z | Add board comment | moijafcor/projects/2 item 192012347 | "DIP authored at docs/mandates/fleet-context/fleet_mcp_server_implementation_plan.md. Ready for Coder." | Pending — draft items may not support comments; attempt after status update |
+| 2026-05-26T00:00:00Z | Set board status IN_PROGRESS | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | option In progress (id=47fc9ee4) | Done — confirmed via GraphQL updateProjectV2ItemFieldValue |
+| 2026-05-26T00:00:00Z | Set board status IN_REVIEW | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | option In review (id=df73e18b) | Done — confirmed via GraphQL updateProjectV2ItemFieldValue |
+| 2026-05-26T00:00:00Z | Add board comment (TIR) | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | "Implementation complete. TIR in DIP at docs/mandates/fleet-context/fleet_mcp_server_implementation_plan.md." | Not done — item is a DraftIssue (id DI_lAHOAAu2cM4BYTLXzgKinCY); draft items have no comment thread via GitHub API. Logged here per protocol. |
 
 ---
 

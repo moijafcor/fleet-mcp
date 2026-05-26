@@ -154,6 +154,7 @@ python3 -m pytest tests/ -x -q --tb=short
 |---|------|-------|-------|-----------|------------|
 | 1 | 2026-05-26 | Coder | DEVIATION | No DIP existed before this session; mandate issued directly to Coder | DIP created inline by Coder before any implementation step |
 | 2 | 2026-05-26 | Coder | DEVIATION | `.gitignore` edit (Step 2) was reset by `git filter-repo` (Step 3) restoring working tree to prior HEAD | Re-applied `.gitignore` entry in Step 4 before committing |
+| 3 | 2026-05-26 | Coder | DEVIATION | Tests hardwired to AdsWire IDs; initial gate run failed (17 tests, `test_services_loaded` first to fail). Stray `examples/adswire` references also found in `Makefile` and `src/cli.py` (not identified in DIP scope). | Created `tests/fixtures/example-fleet/` with anonymised YAML; updated conftest.py, test_store.py, test_tools.py, Makefile, src/cli.py. Gate green after fix. |
 
 ---
 
@@ -182,24 +183,55 @@ python3 -m pytest tests/ -x -q --tb=short
 ## Task Implementation Report (TIR)
 
 **Session:** claude-sonnet-4-6 / 2026-05-26
-**Start:** 2026-05-26T00:00:00Z
-**End:** TBD
+**Start:** 2026-05-26T13:47:00Z
+**End:** 2026-05-26T14:05:00Z
 
 ### Summary
 
-Removed `examples/adswire/` (5 proprietary YAML files: services, deployment, contracts, landmines, data models) from all 11 commits in git history using `git filter-repo --path examples/adswire --invert-paths --force`. Added the path to `.gitignore` to block future re-entry. Completion gate (pytest) passed. Remote force-push is deferred to the Architect as a deliberate manual step per ADR-003.
+Removed `examples/adswire/` (5 proprietary YAML files: services, deployment, contracts, landmines, data models) from all 11 commits in git history using `git filter-repo --path examples/adswire --invert-paths --force`. Added the path to `.gitignore` to block future re-entry. Decoupled test suite from AdsWire topology by introducing `tests/fixtures/example-fleet/` as a generic, anonymised replacement fixture. Fixed stray `examples/adswire` references in `Makefile` and `src/cli.py`. All 17 tests pass. Remote force-push is deferred to the Architect per ADR-003.
 
 ### Implementation Notes
 
 - DEVIATION 001: No prior DIP existed. Created this DIP before implementing.
-- DEVIATION 002: Step 2 (`.gitignore` edit) was overwritten by Step 3 (`git filter-repo` rewrites working tree to new HEAD which lacked the uncommitted `.gitignore` edit). Re-applied in Step 4.
-- `git filter-repo` required `--force` because `origin` remote is configured — this is `git filter-repo`'s own safety flag, not `git push --force`. Not blocked by AGENTS.md.
-- After rewrite, `examples/adswire/` working tree files were removed (expected; git filter-repo updates working tree to new HEAD).
-- All 11 commits were rewritten. Commit SHAs changed for commits at and after `ab7ebce feat: implement fleet-mcp MCP server`. Local branch diverges from `origin/main` and requires a remote force-push.
+- DEVIATION 002: `.gitignore` edit (Step 2) was overwritten when `git filter-repo` restored the working tree to the rewritten HEAD. Re-applied in Step 4.
+- DEVIATION 003: Tests were hardwired to AdsWire IDs (`api-adswire`, `landlord-db`, etc.) — gate failed on first run. `Makefile` and `src/cli.py` also had stray `examples/adswire` path references not identified in original scope. Fixed by creating `tests/fixtures/example-fleet/` and updating all three files.
+- `git filter-repo` required its own `--force` flag because a remote is configured. This is `git filter-repo`'s safety gate, not `git push --force`; it is not on the AGENTS.md blocked list.
+- `git filter-repo` also removed the `origin` remote as a safety measure. Re-added manually after the rewrite.
+- All 11 commits were rewritten. Local `main` diverges from `origin/main`; Architect must force-push to sync the remote.
+- Backup of original `examples/adswire/` at `/tmp/adswire_backup_20260526.tar.gz` (3.7 KB) for the session duration.
 
 ### Evidence
 
-_(Populated during implementation — see step verification commands above)_
+```
+# History purge — zero output confirms clean
+$ git log --all --oneline -- examples/adswire
+(empty)
+
+# .gitignore entry
+$ grep "examples/adswire" .gitignore
+examples/adswire/
+
+# Source reference check
+$ git grep -r "examples/adswire" -- ':!.gitignore' ':!docs/'
+(empty — no stray references in source or test files)
+
+# Completion gate
+$ python3 -m pytest tests/ -x -q --tb=short
+.................
+17 passed in 0.14s
+GATE: PASS
+
+# Working tree after all commits
+$ git status
+On branch main
+nothing to commit, working tree clean
+
+# Final commits (4 added by this session)
+04536d0 test(oss-prep): replace adswire fixture with generic example-fleet
+818f907 docs(oss-prep): add DIP for adswire history purge
+b17e405 chore(oss-prep): add examples/adswire/ to .gitignore
+0490df5 docs(harness): add Quickstart guide, knowledge-graph concept, and README workflow link
+```
 
 ### Blockers
 

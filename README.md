@@ -29,3 +29,8 @@ mcp run src/server.py --transport streamable-http --port 8096
 ```
 
 Point Claude Desktop at `http://localhost:8096/mcp`.
+
+## Development Workflow
+
+Changes to this project follow the [Harnessable](docs/harness/QUICKSTART.md) agent development pipeline:
+`/engineer` → `/coder` → `/qa`. See [`docs/harness/QUICKSTART.md`](docs/harness/QUICKSTART.md) for the full quickstart.

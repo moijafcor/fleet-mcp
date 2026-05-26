@@ -386,3 +386,20 @@ concepts:
     definition: >
       Rotating ADSWIRE_ENCRYPTION_KEY without re-encrypting stored credentials
       makes all platform credentials undecryptable.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HARNESS DOCUMENTATION ARTIFACTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  fleet_mcp.HarnessQuickstart:
+    type: concept
+    definition: >
+      A standalone user-facing guide that explains how to operate the Harnessable
+      agent development pipeline within fleet-mcp. Covers all four roles, all
+      slash commands, the mandate lifecycle, the board state machine, and
+      solo-mode compensating controls. Produced as a single Markdown document at
+      docs/harness/QUICKSTART.md. Not a protocol document — protocol authority
+      remains in docs/harness/agents/ and docs/harness/vendor/harnessable/references/.
+    location: docs/harness/QUICKSTART.md
+    implements: harnessable.Artifact
+    status: project-specific

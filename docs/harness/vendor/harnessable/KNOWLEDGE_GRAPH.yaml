@@ -1,0 +1,471 @@
+# KNOWLEDGE_GRAPH.yaml
+# Harnessable framework ontology — harnessable namespace only.
+# Project-specific concepts and domain namespaces belong in a
+# project-level knowledge graph that extends this file.
+# See references/knowledge-graph.md for the extension model.
+#
+# Replaces: GLOSSARY.md
+
+meta:
+  version: "0.1.0"
+  layer: framework
+  extends: null
+  description: >
+    Authoritative concept graph for the Harnessable operational governance
+    framework. Defines roles, artifacts, events, enumerations, and their
+    relationships. All concepts are scoped to the harnessable namespace.
+
+namespaces:
+  harnessable:
+    description: >
+      Core concepts of the Harnessable operational governance framework.
+      All framework terms are declared here and nowhere else.
+    source: internal
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ABSTRACT BASE TYPES
+# ─────────────────────────────────────────────────────────────────────────────
+
+concepts:
+
+  harnessable.Artifact:
+    type: abstract
+    definition: >
+      A versioned, append-only document produced by a specific Role at a
+      defined stage of the pipeline. No Artifact may be edited after its
+      stage closes. No Artifact may be created unless the preceding
+      Artifact in the chain exists and is complete.
+    subclasses: [harnessable.DMT, harnessable.DIP, harnessable.TIR,
+                 harnessable.QAVerdict, harnessable.ADR]
+    properties:
+      append_only: true
+      requires_predecessor: true
+
+  harnessable.Role:
+    type: abstract
+    definition: >
+      A functional position in the pipeline. Roles are not personal — one
+      human or agent session may perform multiple roles, but the active role
+      must be declared explicitly and role boundaries must be preserved at
+      all times.
+    subclasses: [harnessable.Architect, harnessable.Engineer,
+                 harnessable.Coder, harnessable.QA]
+    constraints:
+      - no_self_approval: true
+        note: No Role may verify or accept work it produced.
+
+  harnessable.Enumeration:
+    type: abstract
+    definition: >
+      A closed set of named values used to classify or characterise other
+      concepts. Values are exhaustive and mutually exclusive unless noted.
+    subclasses: [harnessable.BoardStatus, harnessable.DiscoveryClass,
+                 harnessable.VerdictOutcome, harnessable.MandateType]
+
+  harnessable.Event:
+    type: abstract
+    definition: >
+      An occurrence within the pipeline that must be recorded and may
+      trigger a state transition or a child mandate.
+    subclasses: [harnessable.Discovery]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ROLES
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.Architect:
+    type: harnessable.Role
+    definition: >
+      Defines intent, authors the DMT, and accepts the final QA verdict.
+      Owns the mandate from creation to closure.
+    produces: [harnessable.DMT]
+    accepts: [harnessable.QAVerdict]
+    triggers_status:
+      on_accept: harnessable.BoardStatus.DONE
+    prohibited_from:
+      - acting_as_QA_on_same_mandate
+    knowledge_graph_obligations:
+      at_mandate_open:
+        - Ground every domain concept used in the DMT in
+          docs/knowledge-graph.yaml before the DMT is finalised.
+        - Undefined terms in the DMT are ONTOLOGY_GAP; resolve before
+          setting status to MANDATED.
+      at_mandate_close:
+        - Before accepting the QA verdict and setting DONE, confirm the
+          knowledge graph was amended with all concepts discovered during
+          the mandate lifecycle.
+        - Review all ONTOLOGY_GAP discoveries filed during the mandate
+          and verify each was resolved and committed to the graph.
+        - A mandate whose graph was not enriched is not fully done.
+
+  harnessable.Engineer:
+    type: harnessable.Role
+    definition: >
+      Translates the Architect's intent into a complete, implementable plan.
+      Runs all recon passes. Must not write implementation code.
+    consumes: [harnessable.DMT]
+    produces: [harnessable.DIP]
+    triggers_status:
+      on_start: harnessable.BoardStatus.IN_RECON
+      on_complete: harnessable.BoardStatus.PLANNED
+    prohibited_from:
+      - writing_implementation_code
+    knowledge_graph_obligations:
+      recon_produces_two_outputs:
+        - DIP
+        - knowledge graph amendments for every concept encountered during
+          recon that is not declared in docs/knowledge-graph.yaml
+      constraint: >
+        No concept may appear in the DIP using a raw label if it is absent
+        from the project graph. File ONTOLOGY_GAP, resolve it, then
+        reference the namespaced term in the DIP.
+    git_obligations:
+      recon_must_verify:
+        - git_status_per_codebase: true
+        - git_log_per_codebase: true
+        - prior_commit_claims_require_sha: true
+          note: >
+            "Already committed from mandate X" is not evidence.
+            Cite the SHA or do not make the claim.
+
+  harnessable.Coder:
+    type: harnessable.Role
+    definition: >
+      Executes the DIP exactly as written. Files a Discovery when the plan
+      cannot be followed. Produces the TIR with evidence.
+    consumes: [harnessable.DIP]
+    produces: [harnessable.TIR]
+    triggers_status:
+      on_start: harnessable.BoardStatus.IN_PROGRESS
+      on_complete: harnessable.BoardStatus.IN_REVIEW
+    prohibited_from:
+      - self_verification
+      - proceeding_without_filing_deviation
+    knowledge_graph_obligations:
+      - File ONTOLOGY_GAP for any concept encountered during implementation
+        that is not declared in docs/knowledge-graph.yaml.
+      - Halt work until the gap is resolved.
+    git_obligations:
+      before_in_review:
+        - working_directory_clean: true
+          check: "git status in every touched codebase"
+        - commit_message_matches_diff: true
+          check: "git show --stat HEAD"
+        - cross_codebase_commits: true
+          note: "At least one commit per codebase touched"
+      prohibited:
+        - uncommitted_work_at_in_review: true
+        - commit_message_describes_intent_not_diff: true
+
+  harnessable.QA:
+    type: harnessable.Role
+    definition: >
+      Independently verifies the implementation against the DIP and DMT.
+      Re-executes checks themselves — does not accept TIR claims as evidence.
+    consumes: [harnessable.TIR]
+    produces: [harnessable.QAVerdict]
+    constraints:
+      - must_not_be_session_that_set: harnessable.BoardStatus.IN_REVIEW
+    prohibited_from:
+      - accepting_TIR_claims_as_evidence
+      - inheriting_checks_from_Coder
+    knowledge_graph_obligations:
+      - File ONTOLOGY_GAP for any concept encountered during verification
+        that is not declared in docs/knowledge-graph.yaml, including
+        misclassified alignments or concepts used under incorrect namespaces.
+      - Halt verification until the gap is resolved.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ARTIFACTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.DMT:
+    type: harnessable.Artifact
+    label: Design Mandate Task
+    definition: >
+      The authoritative source that defines the mandate: its problem statement,
+      acceptance criteria, constraints, and out-of-scope declarations. The
+      source of truth for what a mandate is supposed to achieve.
+    produced_by: harnessable.Architect
+    consumed_by: harnessable.Engineer
+    required_before: harnessable.DIP
+    triggers_status: harnessable.BoardStatus.MANDATED
+    source_variants:
+      BoardTask:
+        description: >
+          Created in the project tracker. Has a URL, board status, and comments.
+          Preferred when a project uses a board.
+      LocalFile:
+        description: >
+          A Markdown file checked into docs/mandates/ or equivalent. No board
+          item required.
+      InlineDescription:
+        description: >
+          Text passed directly to the Engineer agent. No persistent file,
+          no board item.
+    notes:
+      authority: All source variants carry identical authority once resolved.
+
+  harnessable.DIP:
+    type: harnessable.Artifact
+    label: Design Implementation Plan
+    definition: >
+      Produced by the Engineer. Describes how to implement the DMT: recon
+      findings, architecture decisions, ordered implementation steps,
+      verification checklists, and containment plan.
+    produced_by: harnessable.Engineer
+    consumed_by: harnessable.Coder
+    requires: harnessable.DMT
+    required_before: harnessable.TIR
+    triggers_status: harnessable.BoardStatus.PLANNED
+    contains: [harnessable.TIR, harnessable.QAVerdict, harnessable.ADR]
+    path_convention: docs/mandates/{bucket}/{slug}_implementation_plan.md
+    constraints:
+      - immutable_after: harnessable.BoardStatus.PLANNED
+        exception: "## Post-Close Notes section only"
+
+  harnessable.TIR:
+    type: harnessable.Artifact
+    label: Task Implementation Report
+    definition: >
+      Produced by the Coder during and after implementation. Contains what
+      was actually built, evidence (verification output, domain-specific
+      checks, health probes), deviation records, and the Coder's sign-off
+      checklist.
+    produced_by: harnessable.Coder
+    consumed_by: harnessable.QA
+    requires: harnessable.DIP
+    required_before: harnessable.QAVerdict
+    embedded_in: harnessable.DIP
+    triggers_status: harnessable.BoardStatus.IN_REVIEW
+    constraints:
+      - evidence_required: true
+        note: Claims without verifiable output are invalid. "It should work" is not evidence.
+
+  harnessable.QAVerdict:
+    type: harnessable.Artifact
+    label: QA Verdict
+    definition: >
+      The outcome of independent verification against the DIP and DMT.
+      Appended to the DIP. Drives the final status transition.
+    produced_by: harnessable.QA
+    consumed_by: harnessable.Architect
+    requires: harnessable.TIR
+    embedded_in: harnessable.DIP
+    valid_values:
+      PASS:
+        definition: >
+          All required checks executed and passed. All DMT acceptance criteria
+          satisfied. TIR evidence complete and verified.
+        triggers_status: harnessable.BoardStatus.VERIFIED
+      CONDITIONAL_PASS:
+        definition: >
+          All required checks pass but minor issues exist that do not block
+          the mandate's core outcome.
+        triggers_status: harnessable.BoardStatus.VERIFIED
+        note: Use sparingly — accumulating conditions makes this a FAIL.
+      FAIL:
+        definition: >
+          One or more required checks failed, or DMT acceptance criteria not
+          met, or TIR evidence insufficient for verification.
+        triggers_status: harnessable.BoardStatus.NEEDS_REVISION
+
+  harnessable.ADR:
+    type: harnessable.Artifact
+    label: Architecture Decision Record
+    definition: >
+      A single entry in the DIP's Architecture Decisions section. Documents
+      one non-obvious design choice: what was decided, why, what alternatives
+      were considered, and what the decision forecloses.
+    produced_by: harnessable.Engineer
+    embedded_in: harnessable.DIP
+    notes:
+      use_when: >
+        A reasonable engineer might have decided differently. Obvious choices
+        do not require an ADR.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENUMERATIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.BoardStatus:
+    type: harnessable.Enumeration
+    definition: >
+      The complete set of valid states for a mandate on the project board.
+      Every transition has a defined owner, a trigger condition, and invariants
+      that must hold. Illegal jumps are protocol violations.
+    values:
+      BACKLOG:
+        definition: Not yet actionable; awaiting prioritisation.
+        owner: harnessable.Architect
+      MANDATED:
+        definition: DMT is complete and approved for execution.
+        owner: harnessable.Architect
+        requires_artifact: harnessable.DMT
+      IN_RECON:
+        definition: Engineer is running discovery passes.
+        owner: harnessable.Engineer
+      PLANNED:
+        definition: DIP is complete; ready for the Coder.
+        owner: harnessable.Engineer
+        requires_artifact: harnessable.DIP
+      IN_PROGRESS:
+        definition: Coder is actively implementing.
+        owner: harnessable.Coder
+      IN_REVIEW:
+        definition: Implementation complete; awaiting QA.
+        owner: harnessable.Coder
+        requires_artifact: harnessable.TIR
+      BLOCKED:
+        definition: Work halted; requires resolution before continuing.
+        owner: harnessable.Architect
+        triggered_by: harnessable.DiscoveryClass.BLOCKER
+      NEEDS_REVISION:
+        definition: QA verdict was FAIL; Coder must address findings.
+        owner: harnessable.Coder
+        triggered_by: harnessable.VerdictOutcome.FAIL
+      VERIFIED:
+        definition: QA verdict was PASS or CONDITIONAL_PASS.
+        owner: harnessable.QA
+        triggered_by: [harnessable.VerdictOutcome.PASS,
+                       harnessable.VerdictOutcome.CONDITIONAL_PASS]
+      DONE:
+        definition: Architect accepted the QA verdict; mandate closed.
+        owner: harnessable.Architect
+        terminal: true
+
+  harnessable.DiscoveryClass:
+    type: harnessable.Enumeration
+    definition: >
+      Classification applied to every field discovery. Determines whether
+      work may continue and what actions are required before it does.
+    values:
+      INFO:
+        definition: Noted for awareness. No design change required. Work continues.
+        halts_work: false
+        requires_dip_update: false
+      DEVIATION:
+        definition: >
+          The implementation or plan must differ from what was written.
+          The DIP must be updated before proceeding.
+        halts_work: true
+        requires_dip_update: true
+      BLOCKER:
+        definition: >
+          Work cannot continue. Requires Architect intervention.
+        halts_work: true
+        triggers_status: harnessable.BoardStatus.BLOCKED
+        requires_child_mandate: true
+      HARNESS_IMPROVEMENT:
+        definition: >
+          A missing or ineffective control was identified. Triggers the
+          continuous improvement loop.
+        halts_work: false
+        triggers: continuous_improvement_loop
+        requires_child_mandate: true
+        see: references/continuous-improvement.md
+      ONTOLOGY_GAP:
+        definition: >
+          A concept was encountered during any pipeline stage that does not
+          exist in docs/knowledge-graph.yaml. The concept must be declared
+          and namespaced in the project graph before work continues. If the
+          DIP referenced the concept using a raw label, the DIP must be
+          updated to use the namespaced term.
+        halts_work: true
+        requires_dip_update: true
+        requires_graph_amendment: true
+        filed_by: [harnessable.Architect, harnessable.Engineer,
+                   harnessable.Coder, harnessable.QA]
+
+  harnessable.MandateType:
+    type: harnessable.Enumeration
+    definition: Classification of a mandate by whether it introduces new work or modifies existing work.
+    values:
+      new:
+        definition: Net-new feature or component with no prior implementation to modify.
+      existing:
+        definition: Modification, fix, or extension of work that already exists.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EVENTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.Discovery:
+    type: harnessable.Event
+    definition: >
+      Filed by any Role when something unexpected is found during execution.
+      Must be filed and classified before work continues. Silent deviations —
+      proceeding without filing — are a protocol violation.
+    filed_by: [harnessable.Architect, harnessable.Engineer,
+               harnessable.Coder, harnessable.QA]
+    classified_as: harnessable.DiscoveryClass
+    constraints:
+      - silent_deviation_is_protocol_violation: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORE CONCEPTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.Mandate:
+    type: concept
+    definition: >
+      The unit of work tracked through the pipeline. Each mandate has a DMT,
+      a DIP, a TIR, and a QA Verdict. Mandates are classified by MandateType.
+    classified_as: harnessable.MandateType
+    composed_of: [harnessable.DMT, harnessable.DIP,
+                  harnessable.TIR, harnessable.QAVerdict]
+    tracked_via: harnessable.BoardStatus
+
+  harnessable.Harness:
+    type: concept
+    definition: >
+      The operating environment around the model: context, tools, permissions,
+      enforcement, verification, and observability. The framework's central
+      concept.
+    formula: "Model + Context + Tools + Enforcement + Verification + Observability"
+    components:
+      Context: AGENTS.md — project rules, allowed/blocked actions, completion gate.
+      Tools: Controlled tools with schemas, validation, and audit logging.
+      Enforcement: PreToolUse hooks — guards that block before execution.
+      Verification: Completion gate and independent QA.
+      Observability: Audit log, TIR evidence, QA Verdict.
+
+  harnessable.Hook:
+    type: concept
+    definition: >
+      A script configured to run automatically in response to agent lifecycle
+      events. Hooks implement the Enforcement Layer — they block or validate
+      actions regardless of what the model decides.
+    lifecycle_events: [PreToolUse, PostToolUse, Stop]
+    dispatcher: hooks/run.py
+    extension_model: >
+      Drop a .py file into the relevant hooks/ subdirectory. No changes to
+      settings.json required.
+    see: references/hooks.md
+
+  harnessable.RCA:
+    type: concept
+    label: Root Cause Analysis
+    definition: >
+      A structured review of a failure to identify the missing or ineffective
+      control that allowed the failure to occur or to reach the stage it did.
+    required_for:
+      - every HARNESS_IMPROVEMENT discovery
+      - any mandate closed with CONDITIONAL_PASS
+      - any mandate that passed through NEEDS_REVISION more than once
+    focus: >
+      The control gap — not the model output. "The model hallucinated" is not
+      an RCA. "There was no guard preventing X" is.
+    see: references/continuous-improvement.md
+
+  harnessable.ContainmentChecklist:
+    type: concept
+    definition: >
+      Four questions that every non-trivial implementation step in a DIP must
+      answer before the Coder touches it. A step with no answer for any of
+      these has a design gap.
+    questions:
+      Detect: How will a failure surface?
+      Contain: What prevents it from cascading?
+      Recover: What is the rollback path?
+      Prevent: What check or policy would catch this class of failure earlier?

@@ -1770,6 +1770,79 @@ Untracked files:
 
 ---
 
+---
+
+## QA Verdict — Second Pass
+
+**Verdict:** FAIL
+**QA Agent:** claude-sonnet-4-6 / QA session 2026-05-26 (second pass)
+**Date:** 2026-05-26
+**Prior Verdict:** FAIL (first pass, same date) — two findings. Remediation session partially resolved both. This pass re-executes all REQUIRED checks against the remediated state.
+
+### Checks Executed
+
+| Check | Result | Evidence |
+|---|---|---|
+| Board status IN_REVIEW confirmed | **WARN** | Board is "In progress" (not In review). User explicitly invoked QA — proceeding with protocol note. |
+| git status — working tree clean | **FAIL** | `.env.example` still untracked. All other files committed. DEVIATION 008 blocker unresolved by human. |
+| git log — remediation commits present | PASS | `0226fe1` and `f760712` present. Contents verified via `git show --stat`. |
+| Previous Finding 2: types-PyYAML in pyproject.toml | PASS | `pyproject.toml [dev]` contains `"types-PyYAML>=6.0.0"` (commit 0226fe1, line 22). |
+| Previous Finding 1 (partial): docs/knowledge-graph.yaml committed | PASS | `git show --stat 0226fe1` shows 388-line addition. All fleet_mcp.* and adswire.* concepts present. |
+| `python3 -m pytest tests/ -x -v --tb=short` | PASS | 17 passed in 0.17s. All test names match TIR evidence. |
+| `ruff check src/ tests/` | PASS | `All checks passed!` |
+| `mypy src/` | PASS | `Success: no issues found in 18 source files`. Now reproducible from `pip install .[dev]` — types-PyYAML declared. |
+| Server imports cleanly, 5 tools registered | PASS | `server importable, tools: 5 / tool names: ['fleet_get_topology', 'fleet_get_api_contract', 'fleet_get_shared_data_model', 'fleet_get_deployment_map', 'fleet_check_cross_app_impact']` |
+| `fleet_get_topology()` — 4 services, non-empty role/stack/urls | PASS | `service_count=4, ids=['api-adswire', 'app-adswire', 'console-adswire', 'www-adswire']`, all role/stack/urls non-empty |
+| `fleet_get_api_contract("app-adswire", "api-adswire")` — ≥1, no warning | PASS | `contracts=2, warning=False` |
+| `fleet_get_api_contract("api-adswire", "app-adswire")` — direct match, no warning | PASS | `contracts=1, warning=False` (api-to-app-policy-invalidation direct match) |
+| `fleet_get_api_contract("api-adswire", "www-adswire")` — empty + warning | PASS | `contracts=[], warning=True` |
+| `fleet_get_shared_data_model()` — 3 models, landlord-db present | PASS | `count=3, ids={'landlord-db', 'tenant-db', 'redis-session-store'}` |
+| `fleet_get_deployment_map(environment="production")` — only prod entries | PASS | `count=4, all_prod=True` |
+| `fleet_check_cross_app_impact("api.adswire.io/auth/sanctum.py")` — api-adswire, risk=high | PASS | `owning=['api-adswire'], risk=high` |
+| `fleet_check_cross_app_impact("some/unrelated/file.py")` — risk=none + warning | PASS | `risk=none, warning=True` |
+| No secrets in fleet YAML | PASS | All critical_config/related_config values are env var names only; no actual credentials. |
+| 5 landmines in examples/adswire/landmines.yaml | PASS | `5 landmines` |
+| 4 services in examples/adswire/services.yaml | PASS | `4 services` |
+| FleetStore loads without pydantic ValidationError | PASS | `loaded ok` |
+| README contains "Wiring to Claude Desktop" | PASS | `grep -c` returns `1` |
+| `python3 -m src.server` starts without error | PASS | `timeout 3 python3 -m src.server` exits 0; no crash. |
+| Knowledge Graph — all DIP concepts declared and committed | PASS | `docs/knowledge-graph.yaml` committed (0226fe1); fleet_mcp.* and adswire.* namespaces complete. |
+| Spot check: `FleetStore` handles missing YAML files | PASS | Partial fleet dir (services.yaml only) loads 1 service, 0 contracts gracefully. |
+| Spot check: OSF-001 still present (empty IDs) | CONFIRMED | Empty string IDs return all contracts without warning. Child task exists. Not a FAIL condition. |
+| Regression scan: files changed outside DIP scope | PASS | All 34 changed files are within DIP scope (src/, tests/, examples/, docs/, pyproject.toml, Makefile, AGENTS.md, README.md, .gitignore). |
+
+### Findings
+
+#### Finding 1 — PRIMARY FAIL: `.env.example` not committed (DEVIATION 008 blocker unresolved)
+
+**Evidence:** `git status` reports `.env.example` as untracked. The remediation Coder committed `docs/knowledge-graph.yaml` and `pyproject.toml` (commit 0226fe1) but was blocked from staging `.env.example` by the SecretsGuard pre-tool-use hook. DEVIATION 008 documents this and provides the exact manual command.
+
+**File content:** Non-sensitive template (`FLEET_DATA_DIR=fleet`, `LOG_LEVEL=INFO`). No credentials.
+
+**DIP scope reference:** Step 1 explicitly lists `.env.example — documented env vars` as a deliverable.
+
+**Action required:** Human must run outside the agent session:
+```bash
+git add .env.example && git commit -m "fix(qa): track env-example template (QA Finding 1 remainder)"
+```
+After this commit, `git status` will be clean and the mandate satisfies Phase 2. No code or logic changes required.
+
+### Out-of-Scope Findings
+
+No new out-of-scope findings. OSF-001 (empty service IDs return all contracts without warning) was filed in the first QA pass; child task exists at `https://github.com/users/moijafcor/projects/2?pane=issue&itemId=PVTI_lAHOAAu2cM4BYTLXzgty0cg`. No further action for this mandate.
+
+### Verdict Rationale
+
+All functional, linting, type-checking, and domain verification checks pass. The only open failure is the git working-tree cleanliness gate: `.env.example` is a declared Step 1 deliverable that has never been committed. The remediation Coder correctly identified the blocker (SecretsGuard hook) and filed DEVIATION 008, but the required human action has not been taken. A single manual `git add .env.example && git commit` resolves this mandate completely — no code or logic changes are needed.
+
+---
+
+## Tracker Ops Log (continued)
+
+| 2026-05-26T02:00:00Z | QA second pass — FAIL | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgtx4Ds | Single remaining finding: .env.example untracked. Board already at In progress (no change). DraftIssue — no comment API. | Logged here per protocol. |
+
+---
+
 ## Post-Close Notes
 
 *Append-only after DONE.*

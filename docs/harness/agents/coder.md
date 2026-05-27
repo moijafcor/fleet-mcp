@@ -20,6 +20,35 @@ Before writing a single line of implementation:
 
 ---
 
+## Pre-Implementation Git State Check (Step 0)
+
+This step is mandatory before any implementation step is executed.
+
+### Run git status
+
+```bash
+git status
+```
+
+**Expected:** `nothing to commit, working tree clean`
+
+If the working tree is clean, proceed to Step 1.
+
+### If the Working Tree Is Not Clean
+
+Classify every unclean file before proceeding. Three valid classifications:
+
+| Classification | Description | Action |
+| --- | --- | --- |
+| `LEGITIMATE_RECON_ARTIFACT` | A file the Engineer created or modified during recon but did not commit — Engineer protocol violation | Commit now with message `chore: commit Engineer recon artifact [filename]`; log a DEVIATION |
+| `PRE_EXISTING_UNRELATED` | A file unrelated to this mandate, modified before the session | Stash or commit separately; log as DEVIATION |
+| `UNKNOWN` | Cannot classify without Architect input | File a BLOCKER, halt |
+
+An unclassified dirty working tree is a BLOCKER. The Coder must not implement
+over an ambiguous git state.
+
+---
+
 ## Implementation Discipline
 
 ### Work in Step Order
@@ -31,6 +60,19 @@ If step N depends on step N-1 being truly complete, verify N-1 before starting N
 
 After each step is genuinely complete (not just coded, but verified per its
 "Verification" sub-item), check it off in the DIP.
+
+### Commit Before Checking Off
+
+Each implementation step must end with its changes committed before the step
+checkbox is ticked. Step N's work must be in git history before Step N+1 begins.
+
+```bash
+git add [affected files]
+git commit -m "[scope]: [description of this step's change]"
+git show --stat HEAD  # confirm the commit captured what you intended
+```
+
+A ticked checkbox with uncommitted changes is a protocol violation.
 
 ### Run Incremental Checks
 
@@ -249,6 +291,7 @@ You may set board to `IN_REVIEW` only when ALL of the following are true:
 
 - [ ] `## Summary` is written (2–4 sentences)
 - [ ] `## Evidence` has actual output (not placeholder text)
+  - Commit SHA for each implementation step (from `git show --stat HEAD` at step completion)
   - Test output (full, not truncated)
   - Linter output (or "Linter: PASS, no output" if clean)
   - Health check / smoke test result

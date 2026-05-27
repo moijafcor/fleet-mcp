@@ -195,6 +195,44 @@ Note gaps — the DIP verification checklist must cover what tests don't.
 
 ---
 
+## Recon Commit Protocol
+
+Every file created or modified during recon is a committed artifact, not a
+working-tree side effect. Knowledge graph updates, architecture docs, discovery
+files — all committed before the DIP is authored.
+
+### Commit Sequence
+
+1. Complete all recon passes (Passes 1–6, Git State Verification, Knowledge Graph Obligation)
+2. Commit all recon artifacts — one commit, message prefix: `chore(recon):`
+3. Author the DIP
+4. Commit the DIP — one commit, message prefix: `docs(dip):`
+
+Two separate commits minimum. Never bundle recon artifacts with the DIP in a
+single commit.
+
+### Clean Working Tree Exit Requirement
+
+Before setting the board to `PLANNED`, run in every codebase the mandate touches:
+
+```bash
+git status
+```
+
+Expected result: `nothing to commit, working tree clean`
+
+A dirty working tree at handoff is a protocol violation at the Engineer role
+level. The Coder must not be expected to classify or resolve the Engineer's
+uncommitted state.
+
+### Uncommittable Recon Artifacts
+
+If a recon artifact cannot be committed (e.g., it touches a path that requires
+Architect approval per `AGENTS.md`), file a `BLOCKER` field discovery and halt.
+Do not leave the file staged. Do not hand off with an unresolved dirty state.
+
+---
+
 ## DIP Authoring Standards
 
 ### Architecture Decisions — Bar for an ADR Entry

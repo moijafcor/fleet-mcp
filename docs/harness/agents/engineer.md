@@ -289,3 +289,36 @@ DIP is ready to hand off when:
 - [ ] `## Verification Checklists` has at least one check per acceptance criterion
 - [ ] *(Board item only)* Board is set to `PLANNED` via the tracker integration. When no board item exists, record the intended status in the DIP `## Tracker Ops Log` as `Pending — no board item`.
 - [ ] *(Board item only)* DMT has a comment via the tracker integration: "DIP authored at `docs/mandates/{path}`. Ready for Coder." When no board item exists, record this intended comment in the DIP `## Tracker Ops Log`.
+
+---
+
+## Framework Observation — RSI Obligation
+
+Before closing this session as Engineer, answer these questions regardless
+of whether the DIP was authored smoothly:
+
+- Was there a recon pass that revealed a gap the framework's recon
+  protocol doesn't account for?
+- Was there a DIP section that felt forced or structurally awkward
+  for this type of mandate?
+- Was there a concept type or relationship that the knowledge graph
+  model couldn't express cleanly?
+- Did the sub-agent delegation pattern serve this mandate, or was
+  something missing from the delegation protocol?
+- Was there friction in the recon commit protocol that could be
+  designed out?
+
+**A clean session with no observations:** record "Framework observation:
+no gaps identified this session" in DIP `## Recon Findings` before the
+handoff commit.
+
+**A session with friction:** file `harnessable.DiscoveryClass.HARNESS_IMPROVEMENT`
+before committing the DIP, with:
+
+- **Gap** — what was missing or inadequate in the protocol
+- **Stage** — which recon pass or DIP section surfaced it
+- **Proposal** — what a better control or protocol element would look like
+
+The recon commit (`chore(recon):`) must include any `HARNESS_IMPROVEMENT`
+discoveries filed during this obligation. They are recon artifacts — they
+must not be left as floating observations that survive only in context.

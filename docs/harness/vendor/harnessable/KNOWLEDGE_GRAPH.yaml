@@ -97,6 +97,14 @@ concepts:
         - Review all ONTOLOGY_GAP discoveries filed during the mandate
           and verify each was resolved and committed to the graph.
         - A mandate whose graph was not enriched is not fully done.
+    rsi_obligations:
+      frequency: every_mandate_closure
+      conditional_on_failure: false
+      closing_step: Framework Observation before setting DONE
+      aggregation_step: review ImprovementSignalLog at Step 4 of Mandate Closure Discipline
+      meta_mandate_trigger: gap_class recurrence >= 3
+      unique_field: propagation — measures distance from gap origin to detection
+      recorded_in: board item closing note
 
   harnessable.Engineer:
     type: harnessable.Role
@@ -127,6 +135,13 @@ concepts:
           note: >
             "Already committed from mandate X" is not evidence.
             Cite the SHA or do not make the claim.
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      closing_step: Framework Observation after Handoff
+      committed_as: "chore(recon): — HARNESS_IMPROVEMENT is a recon artifact"
+      unique_field: stage — names the specific recon pass or DIP section
+      recorded_in: "DIP ## Recon Findings"
 
   harnessable.Coder:
     type: harnessable.Role
@@ -156,6 +171,12 @@ concepts:
       prohibited:
         - uncommitted_work_at_in_review: true
         - commit_message_describes_intent_not_diff: true
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      closing_step: Framework Observation after Exit Gate, before IN_REVIEW
+      unique_field: stage — names the implementation step or gate
+      recorded_in: "TIR ## Implementation Notes"
 
   harnessable.QA:
     type: harnessable.Role
@@ -174,6 +195,13 @@ concepts:
         that is not declared in docs/knowledge-graph.yaml, including
         misclassified alignments or concepts used under incorrect namespaces.
       - Halt verification until the gap is resolved.
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      closing_step: Phase 8 — Framework Observation (mandatory phase)
+      unique_field: upstream_opportunity — where could an earlier control have intervened?
+      recorded_in: QA Verdict section
+      prohibited: skipping Phase 8 — verdict without observation is incomplete
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ARTIFACTS
@@ -364,6 +392,14 @@ concepts:
         triggers: continuous_improvement_loop
         requires_child_mandate: true
         see: references/continuous-improvement.md
+        structured_fields:
+          gap: required
+          stage: required
+          proposal: required
+          upstream_opportunity: optional — QA only
+          propagation: optional — Architect only
+        produces: harnessable.ImprovementSignal
+        stored_in: harnessable.ImprovementSignalLog
       ONTOLOGY_GAP:
         definition: >
           A concept was encountered during any pipeline stage that does not
@@ -415,6 +451,7 @@ concepts:
     composed_of: [harnessable.DMT, harnessable.DIP,
                   harnessable.TIR, harnessable.QAVerdict]
     tracked_via: harnessable.BoardStatus
+    subclasses: [harnessable.MetaMandate]
 
   harnessable.Harness:
     type: concept
@@ -469,3 +506,154 @@ concepts:
       Contain: What prevents it from cascading?
       Recover: What is the rollback path?
       Prevent: What check or policy would catch this class of failure earlier?
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RSI — RECURSIVE SELF-IMPROVEMENT
+# ─────────────────────────────────────────────────────────────────────────────
+
+  harnessable.FrameworkObservation:
+    type: concept
+    definition: >
+      The structured output of the RSI closing ritual performed by any role
+      at the end of every session. Produced unconditionally — regardless of
+      whether anything went wrong. A clean session with no gaps is recorded
+      explicitly; silence is not a valid observation.
+    produced_by: [harnessable.Architect, harnessable.Engineer,
+                  harnessable.Coder, harnessable.QA]
+    properties:
+      mandatory: true
+      conditional_on_failure: false
+    valid_values:
+      no_gaps:
+        definition: >
+          No protocol gaps were identified this session. Recorded explicitly
+          in the role's output artifact (TIR, DIP, QA Verdict, board note).
+        produces: harnessable.ImprovementSignal
+        signal_type: null
+      gap_identified:
+        definition: >
+          A protocol gap was identified. A HARNESS_IMPROVEMENT discovery is
+          filed with structured fields before the role's session closes.
+        produces: harnessable.ImprovementSignal
+        signal_type: harnessable.DiscoveryClass.HARNESS_IMPROVEMENT
+    recorded_in:
+      Architect: "board item closing note"
+      Engineer: "DIP ## Recon Findings — committed in chore(recon):"
+      Coder: "TIR ## Implementation Notes"
+      QA: "QA Verdict section — Phase 8"
+
+  harnessable.ImprovementSignal:
+    type: concept
+    definition: >
+      A single structured record of a framework gap observation, written
+      to the improvement signal log. One signal per HARNESS_IMPROVEMENT
+      discovery. The log accumulates signals across mandates and sessions;
+      the Architect checks it at every mandate closure for recurrence.
+    produced_by: [harnessable.Architect, harnessable.Engineer,
+                  harnessable.Coder, harnessable.QA]
+    stored_in: harnessable.ImprovementSignalLog
+    fields:
+      gap:
+        definition: What was missing or inadequate in the framework protocol.
+        required: true
+      stage:
+        definition: >
+          Which pipeline stage or protocol phase surfaced the gap.
+          Engineer uses recon pass name. Coder uses implementation step.
+          QA uses phase number. Architect uses pipeline position.
+        required: true
+      proposal:
+        definition: What a better control or protocol element would look like.
+        required: true
+      upstream_opportunity:
+        definition: >
+          At which earlier pipeline stage could a control have prevented
+          this gap from being encountered here. QA-specific field; other
+          roles may omit if not applicable.
+        required: false
+        filed_by: harnessable.QA
+      propagation:
+        definition: >
+          Number of pipeline stages the gap traveled before being detected.
+          See harnessable.PropagationDistance. Architect-specific field.
+        required: false
+        filed_by: harnessable.Architect
+      mandate_id:
+        definition: The board item ID or mandate slug of the originating mandate.
+        required: true
+      session_ts:
+        definition: ISO 8601 timestamp of the session in which the gap was observed.
+        required: true
+      gap_class:
+        definition: >
+          A short label for the category of gap. Used for recurrence detection.
+          Examples: "git_state_not_verified", "completion_gate_absent",
+          "dmt_acceptance_criterion_ambiguous", "discovery_class_inadequate".
+        required: true
+
+  harnessable.ImprovementSignalLog:
+    type: concept
+    definition: >
+      The append-only NDJSON file that accumulates all ImprovementSignal
+      entries across all mandates and sessions. Never truncated by the
+      framework. Operators decide purging policy.
+    path_convention: .harness/improvement-signals.jsonl
+    format: NDJSON
+    properties:
+      append_only: true
+      operator_purge_only: true
+    written_by:
+      automatic: pre_compact/mandate_snapshot.py
+      manual: Architect during Mandate Closure Discipline Step 4
+    read_by: harnessable.Architect
+    triggers: harnessable.MetaMandate
+
+  harnessable.PropagationDistance:
+    type: concept
+    definition: >
+      The number of pipeline stages a framework gap traveled from its
+      point of origin before it was detected and filed. Measured in role
+      transitions: a gap introduced at Architect (DMT) and caught at QA
+      has a propagation distance of 3 (Engineer, Coder, QA). A gap
+      introduced at Engineer recon and caught at QA has a distance of 2.
+    unit: pipeline_stages
+    calculated_by: harnessable.Architect
+    recorded_in: harnessable.ImprovementSignal.propagation
+    interpretation:
+      high:
+        threshold: "≥ 3"
+        meaning: >
+          The existing controls allowed the gap to travel far before
+          detection. High improvement priority — earlier controls needed.
+      low:
+        threshold: "≤ 1"
+        meaning: >
+          Existing controls caught the gap near its origin. The pipeline
+          is working; improvement is optimisation, not remediation.
+
+  harnessable.MetaMandate:
+    type: harnessable.Mandate
+    definition: >
+      A mandate whose codebase is the harnessable framework itself.
+      Triggered automatically when the same gap_class appears in three
+      or more ImprovementSignal entries in the signal log. Runs through
+      the full pipeline: Architect defines the improvement, Engineer
+      designs it, Coder implements it in the framework files, QA verifies.
+      The framework improves itself by governing itself.
+    subclass_of: harnessable.Mandate
+    triggered_by: harnessable.ImprovementSignalLog
+    trigger_threshold:
+      recurrence_count: 3
+      matching_field: gap_class
+    title_format: >
+      [HARNESS_META] {gap_class}: observed in {n} mandates —
+      propose and implement framework improvement
+    codebase: harnessable framework files
+    created_by: harnessable.Architect
+    created_when: harnessable.BoardStatus.DONE transition (before setting DONE)
+    properties:
+      mandatory_when_threshold_crossed: true
+      advisory: false
+    note: >
+      The MetaMandate is not a suggestion. When the threshold is crossed,
+      creating it is a precondition for setting DONE on the triggering mandate.

@@ -312,6 +312,34 @@ You may set board to `IN_REVIEW` only when ALL of the following are true:
 
 ---
 
+## Framework Observation — RSI Obligation
+
+Before closing this session as Coder, answer these questions regardless
+of whether anything went wrong:
+
+- Was there a moment where this protocol felt inadequate or missing guidance?
+- Was there a gate check that should exist but doesn't?
+- Did a DEVIATION or BLOCKER reveal a class of failure the framework has
+  no explicit control for?
+- Was the completion gate absent when it should have existed?
+- Was there friction in any step that could be designed out?
+
+**A clean session with no observations:** record "Framework observation:
+no gaps identified this session" in TIR `## Implementation Notes`.
+
+**A session with friction:** file `harnessable.DiscoveryClass.HARNESS_IMPROVEMENT`
+before setting `IN_REVIEW`, with:
+
+- **Gap** — what was missing or inadequate in the protocol
+- **Stage** — which implementation step or gate surfaced it
+- **Proposal** — what a better control would look like
+
+This step is not conditional on failure. A mandate that completed without
+incident but revealed a protocol ambiguity is worth filing. The framework
+improves only if observations are recorded when they are fresh.
+
+---
+
 ## What Coders Must Not Do
 
 - ❌ Modify `## Architecture Decisions` (file a DEVIATION instead)

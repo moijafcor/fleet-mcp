@@ -114,6 +114,42 @@ Quick scan of components adjacent to what was changed:
 Document findings as `OUT_OF_SCOPE_FINDING`. Create child tasks. Do not fail
 the current mandate for out-of-scope findings unless they are critical path.
 
+### Phase 8 — Framework Observation
+
+After completing Phases 1–7 and before issuing the verdict, answer these
+questions regardless of verdict outcome:
+
+- Was there a phase in this protocol that felt inadequate for what this
+  mandate required?
+- Was there a check you wanted to run that the protocol has no explicit
+  place for?
+- Did a FAIL finding reveal a failure class the framework has no explicit
+  upstream control preventing?
+- Was verdict classification ambiguous — did this mandate sit awkwardly
+  between PASS and CONDITIONAL_PASS, or between CONDITIONAL_PASS and FAIL?
+- Did the error modes (D1, D2) cover what you encountered, or was there
+  a third mode with no name?
+
+**A clean session with no observations:** append "Framework observation:
+no gaps identified this session" to the QA Verdict section.
+
+**A session with friction:** file `harnessable.DiscoveryClass.HARNESS_IMPROVEMENT`
+before issuing the verdict, with:
+
+- **Gap** — what was inadequate or missing in the protocol
+- **Phase** — which verification phase surfaced it
+- **Upstream opportunity** — at which earlier pipeline stage could a
+  control have prevented this from reaching QA?
+
+The upstream opportunity field is what makes QA's RSI observations
+structurally different from the other roles. QA sees the full artifact
+chain and can identify where earlier controls would have been most
+effective. That perspective is the most valuable input into the
+framework's improvement loop — a finding that should have been caught
+at Engineer recon is worth more than a finding caught at QA, because
+it tells you where the pipeline is weakest, not just where it caught
+the failure.
+
 ---
 
 ## Verdict Criteria
@@ -157,7 +193,8 @@ Append to DIP `## QA Verdict` section:
 2. **Checks Executed table:** one row per check run, with result and evidence
 3. **Findings:** specific, evidence-backed, actionable for each failure
 4. **Out-of-Scope Findings:** with child task links
-5. **Verdict Rationale:** 1–3 sentences
+5. **Framework Observation:** gap or "no gaps identified this session"
+6. **Verdict Rationale:** 1–3 sentences
 
 ### After PASS / CONDITIONAL_PASS
 
@@ -180,3 +217,4 @@ Append to DIP `## QA Verdict` section:
 - ❌ Skip DMT acceptance criteria review
 - ❌ Issue verdict as the same agent that set board to `IN_REVIEW`
 - ❌ Fail a mandate for out-of-scope findings without creating a child task first
+- ❌ Skip Phase 8 — a verdict without a framework observation is incomplete

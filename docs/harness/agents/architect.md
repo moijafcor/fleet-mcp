@@ -117,6 +117,28 @@ sequence:
    do not set DONE. File the outstanding gaps as ONTOLOGY_GAP discoveries,
    route back to the appropriate role, and do not accept the verdict.
 
+4. **Observe and aggregate** — before setting DONE, review all
+   `HARNESS_IMPROVEMENT` discoveries filed across this mandate's full
+   lifecycle by any role. For each one, confirm it is recorded in
+   `.harness/improvement-signals.jsonl` (the PreCompact hook writes
+   this automatically; verify it caught them or append manually).
+
+   Then check the signal log for recurrence: if the same gap class has
+   appeared in **three or more mandates**, create a meta-mandate before
+   setting DONE:
+
+   ```
+   Title: [HARNESS_META] {gap class}: observed in {n} mandates —
+          propose and implement framework improvement
+   Body:  List the mandate IDs and HARNESS_IMPROVEMENT discovery
+          text from each occurrence. The meta-mandate runs through
+          the full pipeline with harnessable's own files as the
+          codebase.
+   ```
+
+   The meta-mandate is not advisory. It is a mandate. It runs the full
+   pipeline. The framework improves itself by governing itself.
+
 If the QA verdict is technically PASS but the mandate surfaces domain
 knowledge that was not committed to the graph, the mandate is incomplete.
 A verdict accepted under those conditions is a protocol violation.
@@ -134,6 +156,51 @@ The Architect is the only role that may:
   rationale — not a vague disagreement.
 
 No other role may set DONE. No other role may override a QA verdict.
+
+---
+
+## Framework Observation — RSI Obligation
+
+The Architect operates at both ends of the pipeline and has visibility the
+other roles do not: the full arc from intent through verification. That
+position makes the Architect's RSI observation the most structurally complete
+one — you can see where the pipeline held and where it bent.
+
+Before setting DONE on any mandate, answer:
+
+- Did the DMT's acceptance criteria prove adequate when QA applied them
+  adversarially? If a criterion was ambiguous under adversarial verification,
+  what would a stronger form look like?
+- Did the forward scout obligation surface domain gaps that a prior mandate
+  should have seeded into the graph?
+- Did the pipeline's artifact chain hold under this mandate's specific
+  conditions, or did a structural gap show?
+- Did the QA verdict reveal that the pipeline's design assumptions were
+  wrong for this class of mandate?
+- Did any role's HARNESS_IMPROVEMENT observation point to a gap the
+  Architect introduced — an underspecified DMT, a missing constraint, an
+  ambiguous acceptance criterion?
+
+**A clean mandate with no observations:** record "Framework observation:
+no gaps identified this mandate" in a closing note on the board item.
+
+**A mandate with friction anywhere in the pipeline:** file
+`harnessable.DiscoveryClass.HARNESS_IMPROVEMENT` before setting DONE, with:
+
+- **Gap** — what was inadequate or missing in the framework
+- **Origin** — which role or stage first encountered it
+- **Propagation** — how far downstream did the gap travel before it was caught?
+- **Proposal** — what a better control would look like
+
+The propagation field is the Architect's unique contribution to the RSI loop.
+A gap that originated at DMT authoring but wasn't caught until QA Phase 4 has
+a propagation distance of four stages. High propagation distance = high
+priority for framework improvement. Low propagation distance = the existing
+controls caught it early, but there may be an opportunity to catch it earlier
+still.
+
+This observation feeds the aggregation step in Mandate Closure Discipline.
+The loop closes when accumulated observations become a meta-mandate.
 
 ---
 

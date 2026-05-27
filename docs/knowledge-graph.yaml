@@ -287,6 +287,88 @@ concepts:
       high: Path has associated Landmines
 
 # ─────────────────────────────────────────────────────────────────────────────
+# FLEET-MCP CLI AND VALIDATION CONCEPTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+  fleet_mcp.CLICommand:
+    type: concept
+    definition: >
+      A fleet-mcp command-line entry point installed as a project script via
+      pyproject.toml. Each CLICommand performs a single, well-scoped operation
+      that may also be invoked as a subcommand of the `fleet-mcp` dispatcher.
+    known_commands:
+      fleet-mcp-init: scaffold a blank fleet/ directory
+      fleet-mcp-validate: validate fleet YAML cross-reference consistency
+    dispatcher: fleet_mcp.FleetMcpDispatcher
+
+  fleet_mcp.FleetMcpDispatcher:
+    type: concept
+    definition: >
+      The `fleet-mcp` entry point function (`src.cli:fleet_mcp_main`) that
+      routes execution based on sys.argv[1]. If sys.argv[1] == "validate",
+      delegates to fleet_mcp.ValidateCommand. Otherwise falls through to the
+      MCP server runner (mcp.run).
+    implementation: src/cli.py::fleet_mcp_main
+
+  fleet_mcp.ValidateCommand:
+    type: fleet_mcp.CLICommand
+    label: fleet-mcp validate
+    definition: >
+      The `fleet-mcp validate` subcommand (and `fleet-mcp-validate` alias).
+      Performs cross-reference consistency validation across all five YAML files
+      in a fleet/ directory. Exits 0 if the fleet is consistent, 1 if validation
+      errors are found, 2 on fatal YAML load errors. Supports `--json` for
+      machine-readable output. Designed for use as a pre-commit hook.
+    resolves: OSF-001
+    implementation: src/cli.py::validate_command_entry, src/cli.py::validate_command
+    backed_by: fleet_mcp.FleetValidator
+
+  fleet_mcp.FleetValidator:
+    type: concept
+    definition: >
+      The class that performs cross-reference validation of a fleet/ directory.
+      Given a fleet_dir path, loads all YAML via FleetStore, extracts the set
+      of declared service IDs from services.yaml, and verifies that every
+      service ID reference in contracts.yaml, landmines.yaml, data_models.yaml,
+      and deployment.yaml matches a declared service. Also detects empty-string
+      service IDs (OSF-001 class of bug).
+    implementation: src/validator.py::FleetValidator
+    validates:
+      - fleet_mcp.ApiContract.from_service → fleet_mcp.Service.id
+      - fleet_mcp.ApiContract.to_service → fleet_mcp.Service.id
+      - fleet_mcp.Landmine.affected_services[] → fleet_mcp.Service.id
+      - fleet_mcp.SharedDataModel.owner_service → fleet_mcp.Service.id
+      - fleet_mcp.SharedDataModel.consumer_services[] → fleet_mcp.Service.id
+      - fleet_mcp.DeploymentEntry.service_id → fleet_mcp.Service.id
+    returns: fleet_mcp.ValidationResult
+
+  fleet_mcp.ValidationError:
+    type: concept
+    definition: >
+      A single cross-reference validation error found by fleet_mcp.FleetValidator.
+      Identifies the source file, the entry within that file (by id or composite
+      key), the field containing the bad reference, its literal value, and a
+      human-readable message.
+    properties:
+      file: str       # e.g. "contracts.yaml"
+      entry_id: str   # e.g. "app-to-api-auth" or "production/prod.example.com"
+      field: str      # e.g. "from_service" or "affected_services[0]"
+      value: str      # the literal invalid value
+      message: str    # "empty-string service ID" | "unknown service ID '{v}'"
+    implementation: src/validator.py::ValidationError (dataclass)
+
+  fleet_mcp.ValidationResult:
+    type: concept
+    definition: >
+      The output of fleet_mcp.FleetValidator.validate(). Contains a boolean
+      indicating whether the fleet is consistent and the list of all
+      fleet_mcp.ValidationError entries found.
+    properties:
+      valid: bool
+      errors: list[fleet_mcp.ValidationError]
+    implementation: src/validator.py::ValidationResult (dataclass)
+
+# ─────────────────────────────────────────────────────────────────────────────
 # ADSWIRE FLEET DOMAIN CONCEPTS
 # ─────────────────────────────────────────────────────────────────────────────
 

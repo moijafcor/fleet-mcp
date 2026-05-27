@@ -1016,7 +1016,10 @@ Human output: on valid, one line to stdout (`✓ Fleet YAML is consistent.`). On
 | --- | --- | --- | --- | --- |
 | 2026-05-26T00:00:00Z | Set board status IN_RECON | moijafcor/projects/2 item 192459850 (PVTI_lAHOAAu2cM4BYTLXzgt4tEo) | No IN_RECON option on this board. Closest = no change from Backlog. | No — board has no IN_RECON status |
 | 2026-05-26T01:00:00Z | Set board status PLANNED | moijafcor/projects/2 item 192459850 (PVTI_lAHOAAu2cM4BYTLXzgt4tEo) | Option "Ready" (id=61e4505c) is the closest equivalent to PLANNED | Pending — execute after DIP handoff |
-| 2026-05-26T01:00:00Z | Add board comment | moijafcor/projects/2 item 192459850 | "DIP authored at docs/mandates/fleet-context/fleet_mcp_validate_command_implementation_plan.md. Ready for Coder." | Pending — DraftIssue may not support comments; attempt after status update |
+| 2026-05-26T01:00:00Z | Add board comment | moijafcor/projects/2 item 192459850 | "DIP authored at docs/mandates/fleet-context/fleet_mcp_validate_command_implementation_plan.md. Ready for Coder." | Not executed — DraftIssue does not support comments |
+| 2026-05-26T02:00:00Z | Set board status IN_PROGRESS | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgt4tEo | Option "In progress" (id=47fc9ee4). Project id=PVT_kwHOAAu2cM4BYTLX, field id=PVTSSF_lAHOAAu2cM4BYTLXzhTZ_p8 | Yes — Coder session start |
+| 2026-05-26T03:00:00Z | Set board status IN_REVIEW | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgt4tEo | Option "In review" (id=df73e18b) | Yes — Coder sign-off; all gates green |
+| 2026-05-26T03:00:00Z | Add board comment | moijafcor/projects/2 item PVTI_lAHOAAu2cM4BYTLXzgt4tEo | "Implementation complete. TIR in DIP at docs/mandates/fleet-context/..." | Not executed — DraftIssue does not support comments. TIR logged in DIP file. |
 
 ---
 

@@ -1250,6 +1250,132 @@ Child task filed: not yet tracked on board — Architect should create under moi
 
 ---
 
+## QA Verdict — Second Pass
+
+**Verdict:** PASS
+**QA Agent:** claude-sonnet-4-6 / QA session 2026-05-26 (second pass)
+**Date:** 2026-05-26
+
+### Entry Checklist
+
+- [x] AGENTS.md read — Locale: en-CA, Risk Profile: pragmatic, Voice: engineering/high
+- [x] Board status confirmed `In review` — GraphQL fetch of PVTI_lAHOAAu2cM4BYTLXzgt4tEo
+- [x] DMT fetched in full — 8 acceptance criteria confirmed
+- [x] DIP read in full — all sections including Architecture Decisions, Implementation Steps, Field Discoveries, TIR
+- [x] Confirmed QA is not the Coder for this mandate — no role collapse
+
+### Phase 1 — TIR Completeness
+
+- `## Summary`: present and substantive — describes all 9 implementation steps
+- `## Evidence`: real output captured (pytest, ruff, mypy, smoke tests, revision evidence with SHAs)
+- All `[REQUIRED]` checklist items: checked
+- DEVIATIONs: DEVIATION 001 (packaging fix) and DEVIATION 002 (settings.json path fix) both documented and resolved; Field Discoveries 7–9 added in revision
+
+TIR is complete and verifiable. Proceeding to Phase 2.
+
+### Phase 2 — Git State Verification
+
+```
+git status → nothing to commit, working tree clean
+git log --oneline -6:
+  74112e6 docs(phase-2a): update DIP — QA revision sign-off
+  83c3a80 fix(harness): remove .claude/settings.json from git tracking
+  56ddaee docs(phase-2a): add Phase 2-A concepts to knowledge graph
+  91df4ea docs(phase-2a): update Tracker Ops Log with Coder board mutations
+  46fefaa docs(phase-2a): add TIR and check off all DIP steps
+  4d0dd79 feat(phase-2a): add fleet-mcp validate command
+```
+
+- Working tree: **clean**
+- All Phase 2-A SHAs cited in TIR (4d0dd79, 56ddaee, 83c3a80) present in log
+- Commit message / diff alignment: 56ddaee `docs(phase-2a): add Phase 2-A concepts to knowledge graph` — diff shows +82 lines to `docs/knowledge-graph.yaml` — matches. 83c3a80 `fix(harness): remove .claude/settings.json from git tracking` — diff shows deletion of `.claude/settings.json` — matches.
+
+First FAIL reason (F-001) resolved: `docs/knowledge-graph.yaml` Phase 2-A changes now committed in 56ddaee.
+Second FAIL reason (F-002/OSF-QA-001) resolved: `.claude/settings.json` removed from git tracking in 83c3a80.
+
+### Phase 3 — Acceptance Criteria Mapping
+
+| DMT Criterion | DIP Checklist Item | QA Direct Verification |
+|---|---|---|
+| Resolves `contracts.yaml` IDs against `services.yaml` | `[REQUIRED]` Functional: FleetValidator.validate(example-fleet) + `test_unknown_service_in_contract_from_service` | PASS — 2 contract errors in smoke test output |
+| Resolves `landmines.yaml` `affected_services` | `[REQUIRED]` QA-specific: landmines test | PASS — 1 landmine error in smoke test output |
+| Resolves `data_models.yaml` `owner_service` and `consumer_services` | `[REQUIRED]` QA-specific: two data model tests | PASS — 2 data model errors in smoke test output |
+| Resolves `deployment.yaml` `service_id` | `[REQUIRED]` QA-specific: deployment test | PASS — 1 deployment error in smoke test output |
+| Flags empty-string IDs (OSF-001 class) | `[REQUIRED]` Functional: empty-string test | PASS — `"empty-string service ID"` in smoke output |
+| Exits 0 on clean, non-zero on failure | `[REQUIRED]` Functional: exits 0/1 smoke tests | PASS — exit 0 and exit 1 confirmed |
+| Usable as pre-commit hook | `[REQUIRED]` QA-specific: pre-commit hook test | PASS — `export FLEET_DATA_DIR=…; fleet-mcp validate --fleet-dir $FLEET_DATA_DIR` exits 0 |
+| Machine-readable JSON via `--json` | `[REQUIRED]` Functional: JSON schema check | PASS — `{valid, error_count, errors[…]}` confirmed |
+
+No `UNMAPPED_CRITERION` findings.
+
+### Phase 4 — Verification Checklist Re-execution
+
+| Check | Result | Evidence |
+|---|---|---|
+| `FleetValidator.validate(example-fleet)` → valid=True, errors=[] | PASS | pytest `test_valid_fleet_passes` PASSED; smoke test `✓ Fleet YAML is consistent.` exit 0 |
+| `FleetValidator.validate(invalid-fleet)` → exactly 6 errors | PASS | pytest `test_invalid_fleet_reports_errors` PASSED; smoke test lists 6 errors |
+| Empty-string `from_service` → message=="empty-string service ID", value=="" | PASS | pytest `test_empty_string_service_id_in_contract` PASSED; smoke test line `[bad-contract-empty-from] from_service: empty-string service ID (value: '')` |
+| Unknown `from_service` → message contains "unknown service ID 'svc-unknown'" | PASS | pytest `test_unknown_service_in_contract_from_service` PASSED |
+| Deployment `entry_id` = `"{service_id}/{environment}"` | PASS | smoke test: `deployment.yaml [svc-unknown/production] service_id` |
+| `fleet-mcp validate --fleet-dir example-fleet` exits 0 | PASS | `✓ Fleet YAML is consistent.` exit: 0 |
+| `fleet-mcp validate --fleet-dir invalid-fleet` exits 1 | PASS | 6 errors printed, exit: 1 |
+| `--json` emits valid JSON on valid fleet | PASS | `{"valid": true, "error_count": 0, "errors": []}` |
+| `--json` emits valid JSON on invalid fleet | PASS | `{"valid": false, "error_count": 6, "errors": […]}` |
+| JSON schema: `{valid, error_count, errors[{file,entry_id,field,value,message}]}` | PASS | All 5 fields present per error object |
+| `fleet-mcp-validate --fleet-dir example-fleet` exits 0 | PASS | `✓ Fleet YAML is consistent.` exit: 0 |
+| Malformed YAML → exit 2 | PASS | `validate_command(tmp, json_output=False)` → exit code 2 |
+| Exit 2 + `--json` → `{"valid":false,"load_error":"…","errors":[]}` | PASS | `load_error present: True`, `errors empty: True`, exit code 2 |
+| `fleet-mcp` (no args) dispatcher falls through | PASS | Dispatcher source confirmed: `else: from src.server import mcp; mcp.run()` |
+| `fleet-mcp-init` entry point unchanged | PASS | `fleet-mcp-init` invoked, scaffolded fleet/ correctly |
+| No new runtime dependencies | PASS | `pip show fleet-mcp` Requires: mcp, pydantic, pydantic-settings, pyyaml (unchanged) |
+| `python3 -m pytest tests/ -x -q --tb=short` | PASS | `34 passed in 0.23s` |
+| `ruff check src/ tests/` | PASS | `All checks passed!` |
+| `mypy src/` | PASS | `Success: no issues found in 19 source files` |
+| Pre-commit hook: `export FLEET_DATA_DIR=…; fleet-mcp validate --fleet-dir $FLEET_DATA_DIR` | PASS | `✓ Fleet YAML is consistent.` exit: 0 |
+
+### Phase 5 — Spot Checks
+
+| Check | Result | Evidence |
+|---|---|---|
+| Unknown `to_service` also flagged | PASS | Validator returns 1 error for `to_service: svc-unknown` — `unknown service ID 'svc-unknown'` |
+| Empty-string `to_service` also flagged | PASS | `contracts.yaml empty-to to_service '' empty-string service ID` |
+| Phase 1 tests not regressed (17 tests: test_store.py + test_tools.py) | PASS | All 17 Phase 1 tests PASSED in verbose run |
+
+### Phase 6 — Knowledge Graph Verification
+
+All six Phase 2-A concepts declared in `docs/knowledge-graph.yaml`, committed in 56ddaee:
+- `fleet_mcp.CLICommand` — type: concept, definition: substantive
+- `fleet_mcp.FleetMcpDispatcher` — type: concept, implementation: src/cli.py::fleet_mcp_main
+- `fleet_mcp.ValidateCommand` — type: fleet_mcp.CLICommand, backed_by: fleet_mcp.FleetValidator
+- `fleet_mcp.FleetValidator` — type: concept, validates: 6 cross-reference pairs listed
+- `fleet_mcp.ValidationError` — type: concept, properties: 5 fields listed
+- `fleet_mcp.ValidationResult` — type: concept, properties: valid + errors list
+
+No ONTOLOGY_GAP findings. No unresolved concept gaps.
+
+### Phase 7 — Out-of-Scope Regression Scan
+
+Files changed across all Phase 2-A commits (4d0dd79–74112e6):
+- `.claude/settings.json` — outside DIP scope but net effect is **deletion from git tracking** (83c3a80), restoring correct gitignore state. No portability risk remains.
+- `docs/knowledge-graph.yaml` — in scope (DIP Step 1)
+- `docs/mandates/fleet-context/fleet_mcp_validate_command_implementation_plan.md` — in scope
+- `pyproject.toml` — in scope (DIP Step 6, DEVIATION 001)
+- `src/cli.py` — in scope (DIP Step 5)
+- `src/validator.py` — in scope (DIP Step 3)
+- `tests/fixtures/invalid-fleet/` — in scope (DIP Step 2)
+- `tests/test_cli.py` — in scope (DIP Step 7)
+- `tests/test_validator.py` — in scope (DIP Step 4)
+
+No files changed outside DIP scope in the net repository state. No new log errors. No dependency version bumps.
+
+**OSF-QA-001 from first QA pass:** Resolved by 83c3a80. No child task required — root cause eliminated.
+
+### Verdict Rationale
+
+Both first-pass FAIL defects are resolved: `docs/knowledge-graph.yaml` Phase 2-A additions are committed in 56ddaee, and `.claude/settings.json` is removed from git tracking in 83c3a80. All 21 REQUIRED DIP checks pass under QA's independent re-execution, all 8 DMT acceptance criteria are satisfied, the knowledge graph is complete, and no regressions were introduced in Phase 1 tests. The implementation faithfully realises the Architect's intent as specified in the DIP.
+
+---
+
 ## Post-Close Notes
 
 *Append-only after DONE. Do not modify earlier sections.*

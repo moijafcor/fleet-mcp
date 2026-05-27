@@ -1,6 +1,7 @@
 # .gitignore
 .harnessable/
-.claude/
+.claude/*
+!.claude/settings.json
 __pycache__/
 *.pyc
 .env

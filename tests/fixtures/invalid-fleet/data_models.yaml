@@ -1,0 +1,16 @@
+- id: good-data-model
+  name: Good Data Model
+  owner_service: svc-app
+  consumer_services:
+    - svc-api
+  storage_type: postgresql
+  description: Valid data model — must not generate an error.
+
+- id: bad-data-model
+  name: Bad Data Model
+  owner_service: svc-unknown
+  consumer_services:
+    - svc-api
+    - svc-also-unknown
+  storage_type: postgresql
+  description: Unknown owner_service and one unknown consumer_service.

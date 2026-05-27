@@ -1,0 +1,88 @@
+- id: svc-api
+  name: api.example.com
+  role: mcp-server
+  description: Example MCP server service.
+  stack:
+    language: python
+    version: "3.12"
+    framework: fastapi
+    framework_version: starlette
+    extras:
+      mcp_sdk: "mcp[cli]>=1.0.0"
+      transport: streamable-http+sse
+  urls:
+    production: https://api.example.com
+    local: http://localhost:8095
+  entry_points:
+    - server.py
+  owns:
+    path_patterns:
+      - "api.example.com/**"
+      - "example.d/api/**"
+  port: 8095
+
+- id: svc-app
+  name: app.example.com
+  role: saas-dashboard
+  description: Example SaaS dashboard and OAuth 2.0 authorisation server.
+  stack:
+    language: php
+    version: "8.3"
+    framework: laravel
+    framework_version: "12"
+    extras:
+      frontend: "Livewire 4"
+  urls:
+    production: https://app.example.com
+    local: http://localhost:8080
+  entry_points:
+    - artisan
+    - public/index.php
+  owns:
+    path_patterns:
+      - "app.example.com/**"
+      - "example.d/app/**"
+  port: 8080
+
+- id: svc-console
+  name: console.example.com
+  role: ops-portal
+  description: Example internal operations portal.
+  stack:
+    language: php
+    version: "8.3"
+    framework: laravel
+    framework_version: "12"
+    extras: {}
+  urls:
+    production: https://console.example.com
+    local: http://localhost:8081
+  entry_points:
+    - artisan
+    - public/index.php
+  owns:
+    path_patterns:
+      - "console.example.com/**"
+      - "example.d/console/**"
+  port: 8081
+
+- id: svc-www
+  name: www.example.com
+  role: marketing-site
+  description: Example public marketing site.
+  stack:
+    language: python
+    version: "3.12"
+    framework: uvicorn
+    extras:
+      entry: landing.py
+  urls:
+    production: https://www.example.com
+    local: http://localhost:8091
+  entry_points:
+    - landing.py
+  owns:
+    path_patterns:
+      - "www.example.com/**"
+      - "example.d/www/**"
+  port: 8091

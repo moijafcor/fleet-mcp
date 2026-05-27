@@ -1,0 +1,20 @@
+- id: good-contract
+  from_service: svc-app
+  to_service: svc-api
+  protocol: oauth2
+  mechanism: passport
+  description: Valid contract — must not generate an error.
+
+- id: bad-contract-unknown-from
+  from_service: svc-unknown
+  to_service: svc-api
+  protocol: http-rest
+  mechanism: api-key
+  description: Unknown from_service.
+
+- id: bad-contract-empty-from
+  from_service: ""
+  to_service: svc-api
+  protocol: http-rest
+  mechanism: api-key
+  description: Empty-string from_service (OSF-001 class).

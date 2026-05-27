@@ -1,0 +1,16 @@
+- id: good-landmine
+  affected_services:
+    - svc-api
+  trigger: Valid landmine — must not generate an error.
+  severity: low
+  consequence: None.
+  remedy: None.
+
+- id: bad-landmine-unknown-service
+  affected_services:
+    - svc-api
+    - svc-unknown
+  trigger: Unknown service in affected_services.
+  severity: low
+  consequence: None.
+  remedy: None.

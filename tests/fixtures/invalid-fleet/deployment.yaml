@@ -1,0 +1,11 @@
+- service_id: svc-api
+  environment: production
+  host: prod.example.com
+  port: 8095
+  process: uvicorn
+
+- service_id: svc-unknown
+  environment: production
+  host: prod.example.com
+  port: 9999
+  process: unknown

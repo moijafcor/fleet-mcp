@@ -1,0 +1,100 @@
+# docs/knowledge-graph.yaml
+#
+# Project knowledge graph — bootstrap template
+# Copy this file to docs/knowledge-graph.yaml in your project.
+# Replace all placeholder values before your first mandate.
+#
+# Full guide: docs/harness/vendor/harnessable/references/knowledge-graph.md
+
+meta:
+  version: "0.1.0"
+  layer: project
+  extends: docs/harness/vendor/harnessable/KNOWLEDGE_GRAPH.yaml
+  harnessable_version: "REPLACE_WITH_CONTENTS_OF_HARNESSABLE_VERSION_FILE"
+  project: "REPLACE_WITH_YOUR_PROJECT_NAME"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NAMESPACES
+#
+# Declare every namespace this project uses. The harnessable namespace
+# is inherited from the framework graph — do not redeclare it here.
+#
+# your_domain   → concepts internal to this project
+# external_*    → concepts from third-party platforms and APIs
+#
+# Replace 'your_domain' with a short identifier: adswire, tfx, myapp, etc.
+# ─────────────────────────────────────────────────────────────────────────────
+
+namespaces:
+  your_domain:
+    description: >
+      Core concepts specific to this project's domain. Replace
+      'your_domain' with a short identifier for your domain.
+    source: internal
+  # Uncomment and add external namespaces as your mandates require:
+  # google_ads:
+  #   description: Google Ads API concepts.
+  #   source: https://developers.google.com/google-ads/api/docs/concepts
+  # meta:
+  #   description: Meta Ads platform concepts.
+  #   source: https://developers.facebook.com/docs/marketing-api
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONCEPTS
+#
+# Declare domain concepts here as they are encountered during mandate
+# execution. Start with the concepts referenced in your first DMT.
+# Add an entry whenever you file an ONTOLOGY_GAP discovery.
+#
+# Pattern:
+#   your_domain.ConceptName:
+#     type: concept
+#     definition: >
+#       Precise meaning in this project context. Write what the concept
+#       means here, not a copy of external documentation.
+#     properties:
+#       key: value
+#     see: reference URL or internal doc path
+#
+# Example — uncomment and adapt:
+#   your_domain.Tenant:
+#     type: concept
+#     definition: >
+#       An isolated customer account with its own database and
+#       configuration. The primary unit of multi-tenancy.
+#     properties:
+#       db_isolated: true
+#       billing_owner: true
+# ─────────────────────────────────────────────────────────────────────────────
+
+concepts:
+  # Concepts are added here as mandates discover and declare them.
+  # This section will grow with your project. An empty section is
+  # valid for a freshly bootstrapped graph.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALIGNMENTS
+#
+# Declare cross-namespace concept relationships when two platforms use
+# the same label for different concepts. Required before any mandate
+# that operates across multiple external platforms.
+#
+# Relationship values:
+#   same_as          — semantically identical; safe to treat as equivalent
+#   similar_to       — functionally related but not identical; verify divergence
+#   collides_with    — same label, different meaning; never treat as equivalent
+#   has_no_equivalent_in — concept exists in one namespace only
+#
+# Example — uncomment and adapt:
+#   - id: campaign_label_collision
+#     concepts: [google_ads.Campaign, meta.Campaign]
+#     relationship: collides_with
+#     shared_label: Campaign
+#     divergence: >
+#       Google Ads Campaign owns budget and bid strategy. Meta Campaign
+#       owns the objective; budget may live at Campaign (CBO) or AdSet
+#       (ABO). Treat as distinct despite identical labels.
+#     safe_assumption: false
+# ─────────────────────────────────────────────────────────────────────────────
+
+alignments: []

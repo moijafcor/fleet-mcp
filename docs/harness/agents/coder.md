@@ -106,6 +106,24 @@ If a concept is encountered during implementation that is not declared in
 discovery before continuing. Do not proceed using a raw label. Do not assume
 the concept was intentionally left undeclared.
 
+**Absent-file exception:** If `docs/knowledge-graph.yaml` does not exist when
+you first encounter this obligation, this is a **bootstrap condition**, not an
+`ONTOLOGY_GAP`. The Engineer was expected to seed the file during recon; its
+absence at Coder entry is an Engineer protocol violation. Do not halt
+indefinitely. Instead:
+
+1. Log a DEVIATION: "docs/knowledge-graph.yaml absent at Coder entry — Engineer
+   recon artifact missing."
+2. Copy `docs/harness/templates/knowledge-graph.yaml` to `docs/knowledge-graph.yaml`.
+3. Replace all placeholder values: set `project` to this project's name and
+   set `harnessable_version` to match the content of
+   `docs/harness/vendor/harnessable/HARNESSABLE_VERSION`.
+4. Commit: `chore: bootstrap docs/knowledge-graph.yaml from template`.
+5. Continue with implementation, treating the bootstrapped file as the project graph.
+
+A missing file bootstrapped at Coder entry is not a block on implementation.
+An absent file left unaddressed is.
+
 ---
 
 ## DEVIATION Protocol

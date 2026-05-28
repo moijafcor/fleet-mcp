@@ -103,6 +103,23 @@ the wrong namespace or with an incorrect alignment — file an
 resolved. A passing QA Verdict on a mandate that left graph gaps is a protocol
 violation.
 
+**Absent-file exception:** If `docs/knowledge-graph.yaml` does not exist when
+Phase 6 is reached, this is a **bootstrap condition** that should have been
+resolved at Architect, Engineer, or Coder entry. Its presence at QA is a
+pipeline violation, not a QA task. Do not bootstrap the file yourself. Instead:
+
+1. Issue a **FAIL** with finding: "`docs/knowledge-graph.yaml` absent at QA
+   entry — bootstrap obligation was not met by an upstream role."
+2. Identify the earliest pipeline stage that should have created the file
+   (Architect if the DMT referenced domain concepts; Engineer otherwise).
+3. File `harnessable.DiscoveryClass.HARNESS_IMPROVEMENT` with:
+   - **Gap:** absent-file bootstrap was not executed upstream
+   - **Phase:** Phase 6
+   - **Upstream opportunity:** the role and stage that first had the obligation
+
+Do not accept a mandate where the project graph was never seeded. The graph
+is a required pipeline output, not an optional enrichment.
+
 ### Phase 7 — Out-of-Scope Regression Scan
 
 Quick scan of components adjacent to what was changed:

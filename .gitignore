@@ -13,3 +13,4 @@ dist/
 # Proprietary fleet reference data — not for public repository
 examples/adswire/.harness/
 .harness/
+!.claude/commands/

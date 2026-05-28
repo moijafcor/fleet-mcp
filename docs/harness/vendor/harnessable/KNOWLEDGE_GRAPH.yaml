@@ -36,7 +36,8 @@ concepts:
       stage closes. No Artifact may be created unless the preceding
       Artifact in the chain exists and is complete.
     subclasses: [harnessable.DMT, harnessable.DIP, harnessable.TIR,
-                 harnessable.QAVerdict, harnessable.ADR]
+                 harnessable.SIR, harnessable.QAVerdict, harnessable.ADR,
+                 harnessable.SRR]
     properties:
       append_only: true
       requires_predecessor: true
@@ -49,7 +50,8 @@ concepts:
       must be declared explicitly and role boundaries must be preserved at
       all times.
     subclasses: [harnessable.Architect, harnessable.Engineer,
-                 harnessable.Coder, harnessable.QA]
+                 harnessable.Coder, harnessable.SRE, harnessable.QA,
+                 harnessable.Security]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -80,6 +82,9 @@ concepts:
       Owns the mandate from creation to closure.
     produces: [harnessable.DMT]
     accepts: [harnessable.QAVerdict]
+    decision_authority:
+      - Accepts harnessable.SRR (SECURE_PASS or CONDITIONAL_PASS) and sets DONE
+      - Invokes Security review by flagging DMT
     triggers_status:
       on_accept: harnessable.BoardStatus.DONE
     prohibited_from:
@@ -178,12 +183,42 @@ concepts:
       unique_field: stage — names the implementation step or gate
       recorded_in: "TIR ## Implementation Notes"
 
+  harnessable.SRE:
+    type: harnessable.Role
+    definition: >
+      Executes infrastructure, deployment, and operational mandates
+      against live systems. Operates where production state exists
+      outside version control, rollback requires a runbook rather than
+      a git revert, blast radius extends beyond the codebase, and
+      verification is system health rather than test suites.
+    produces: [harnessable.SIR]
+    consumes: [harnessable.DIP]
+    triggers_status:
+      on_start: harnessable.BoardStatus.IN_PROGRESS
+      on_complete: harnessable.BoardStatus.IN_REVIEW
+    prohibited_from:
+      - self_verification
+      - executing_without_rollback_procedure
+      - proceeding_with_degraded_baseline
+      - applying_changes_during_failing_health_checks
+    git_obligations:
+      - commit_iac_before_apply: true
+      - working_directory_clean_before_in_review: true
+    knowledge_graph_obligations:
+      - file_ontology_gap_for_undeclared_infra_concepts: true
+      - absent_file_exception: true
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      closing_step: Phase 5 Framework Observation
+      recorded_in: "SIR ## SRE Sign-Off"
+
   harnessable.QA:
     type: harnessable.Role
     definition: >
       Independently verifies the implementation against the DIP and DMT.
-      Re-executes checks themselves — does not accept TIR claims as evidence.
-    consumes: [harnessable.TIR]
+      Re-executes checks themselves — does not accept TIR or SIR claims as evidence.
+    consumes: [harnessable.TIR, harnessable.SIR]
     produces: [harnessable.QAVerdict]
     constraints:
       - must_not_be_session_that_set: harnessable.BoardStatus.IN_REVIEW
@@ -202,6 +237,36 @@ concepts:
       unique_field: upstream_opportunity — where could an earlier control have intervened?
       recorded_in: QA Verdict section
       prohibited: skipping Phase 8 — verdict without observation is incomplete
+
+  harnessable.Security:
+    type: harnessable.Role
+    definition: >
+      Performs adversarial security review of implementations.
+      Invoked explicitly by the Architect on mandates that touch
+      auth, external inputs, credentials, data exposure, privilege,
+      or external-facing surfaces. Asks not "does it work?" but
+      "can it be made to not work, leak, or be abused?"
+    produces: [harnessable.SRR]
+    consumes: [harnessable.TIR, harnessable.QAVerdict]
+    prerequisite: harnessable.QAVerdict (PASS or CONDITIONAL_PASS)
+    invoked_by: harnessable.Architect
+    invocation_condition: >
+      Architect explicitly flags the DMT for Security review.
+      Not automatic. Triggers on: auth changes, external inputs,
+      credentials, new external surfaces, data exposure changes,
+      privilege changes, new dependencies.
+    prohibited_from:
+      - running_functional_tests
+      - fixing_vulnerabilities_then_passing
+      - reviewing_without_qa_pass
+      - skipping_threat_surface_map
+      - skipping_phase_8
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      closing_step: Phase 8 Framework Observation
+      unique_field: upstream_opportunity
+      recorded_in: SRR
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ARTIFACTS
@@ -246,7 +311,7 @@ concepts:
     requires: harnessable.DMT
     required_before: harnessable.TIR
     triggers_status: harnessable.BoardStatus.PLANNED
-    contains: [harnessable.TIR, harnessable.QAVerdict, harnessable.ADR]
+    contains: [harnessable.TIR, harnessable.SIR, harnessable.QAVerdict, harnessable.ADR]
     path_convention: docs/mandates/{bucket}/{slug}_implementation_plan.md
     constraints:
       - immutable_after: harnessable.BoardStatus.PLANNED
@@ -269,6 +334,25 @@ concepts:
     constraints:
       - evidence_required: true
         note: Claims without verifiable output are invalid. "It should work" is not evidence.
+
+  harnessable.SIR:
+    type: harnessable.Artifact
+    label: SRE Implementation Report
+    definition: >
+      Produced by the SRE during and after infrastructure execution.
+      Embedded as a section in the DIP. Contains pre-change baseline,
+      step-by-step change execution log with actual output, incident
+      notes if any, observation window evidence, and rollback status.
+    produced_by: harnessable.SRE
+    consumed_by: harnessable.QA
+    requires: harnessable.DIP
+    required_before: harnessable.QAVerdict
+    embedded_in: harnessable.DIP
+    triggers_status: harnessable.BoardStatus.IN_REVIEW
+    constraints:
+      - pre_change_baseline_required: true
+      - observation_window_required: true
+      - rollback_viability_confirmed: true
 
   harnessable.QAVerdict:
     type: harnessable.Artifact
@@ -296,6 +380,31 @@ concepts:
         definition: >
           One or more required checks failed, or DMT acceptance criteria not
           met, or TIR evidence insufficient for verification.
+        triggers_status: harnessable.BoardStatus.NEEDS_REVISION
+
+  harnessable.SRR:
+    type: harnessable.Artifact
+    label: Security Review Report
+    definition: >
+      Produced by the Security reviewer after adversarial review
+      of a QA-passed implementation. Contains threat surface map,
+      findings table with severity classification, child task
+      references, and verdict. Appended to the DIP.
+    produced_by: harnessable.Security
+    consumed_by: harnessable.Architect
+    requires: harnessable.QAVerdict
+    embedded_in: harnessable.DIP
+    valid_values:
+      SECURE_PASS:
+        definition: No CRITICAL or HIGH findings.
+        triggers_status: harnessable.BoardStatus.VERIFIED
+      CONDITIONAL_PASS:
+        definition: >
+          No CRITICAL findings. HIGH findings with documented
+          Architect risk acceptance.
+        triggers_status: harnessable.BoardStatus.VERIFIED
+      FAIL:
+        definition: CRITICAL findings or HIGH without risk acceptance.
         triggers_status: harnessable.BoardStatus.NEEDS_REVISION
 
   harnessable.ADR:
@@ -449,9 +558,18 @@ concepts:
       a DIP, a TIR, and a QA Verdict. Mandates are classified by MandateType.
     classified_as: harnessable.MandateType
     composed_of: [harnessable.DMT, harnessable.DIP,
-                  harnessable.TIR, harnessable.QAVerdict]
+                  harnessable.TIR, harnessable.SIR, harnessable.QAVerdict]
+    notes:
+      implementation_report: >
+        Code mandates produce a TIR; infrastructure mandates produce a SIR.
+        Exactly one of the two is required before the QA Verdict.
     tracked_via: harnessable.BoardStatus
     subclasses: [harnessable.MetaMandate]
+    security_review_required: optional
+    note: >
+      Set by Architect in DMT. When true, Security review runs after
+      QA PASS before DONE. A mandate with security_review_required: true
+      cannot reach DONE without an SRR.
 
   harnessable.Harness:
     type: concept
@@ -479,6 +597,24 @@ concepts:
       Drop a .py file into the relevant hooks/ subdirectory. No changes to
       settings.json required.
     see: references/hooks.md
+
+  harnessable.CCSkill:
+    type: concept
+    definition: >
+      A Claude Code custom command that encapsulates a harnessable
+      role invocation. Lives at .claude/commands/{role}.md in the
+      project. Accepts $ARGUMENTS as the mandate source and resolves
+      it via three-case detection: board URL/ID, local file path,
+      or inline text. Reads project configuration from AGENTS.md
+      rather than hardcoding project-specific values.
+    install_path: .claude/commands/{role}.md
+    source_template: framework/templates/skills/{role}.md
+    tier: 1
+    arguments_cases: [board_url_or_id, local_file_path, inline_text]
+    customisation_points:
+      - project_tracker_url_pattern_and_fetch_command
+      - framework_base_path
+    see: framework/vendor/harnessable/references/skills.md
 
   harnessable.RCA:
     type: concept

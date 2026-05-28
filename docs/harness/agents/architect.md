@@ -40,6 +40,21 @@ begins.
 The scout sequence:
 
 1. Load `docs/knowledge-graph.yaml` and the vendored framework graph.
+
+   **Absent-file exception:** If `docs/knowledge-graph.yaml` does not exist,
+   this is a **bootstrap condition** — the project graph has never been seeded.
+   Do not file `ONTOLOGY_GAP` and do not halt on this account. Instead:
+
+   1. Copy `docs/harness/templates/knowledge-graph.yaml` to `docs/knowledge-graph.yaml`.
+   2. Replace all placeholder values: set `project` to this project's name and
+      set `harnessable_version` to match the content of
+      `docs/harness/vendor/harnessable/HARNESSABLE_VERSION`.
+   3. Commit: `chore: bootstrap docs/knowledge-graph.yaml from template`.
+   4. Continue from step 2 below with the newly bootstrapped file.
+
+   A bootstrap condition is not a protocol violation. An absent file that is
+   not bootstrapped when first encountered is.
+
 2. For each domain concept the mandate will involve, confirm it is declared
    with a namespaced key (e.g. `your_domain.ConceptName`).
 3. For any concept not yet declared: add it to `docs/knowledge-graph.yaml`

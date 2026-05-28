@@ -238,6 +238,21 @@ project graph with the correct namespace and relationships — then reference th
 namespaced term in the DIP. Raw labels in the DIP are a protocol violation if
 the concept is absent from the graph.
 
+**Absent-file exception:** If `docs/knowledge-graph.yaml` does not exist when
+you reach this obligation, this is a **bootstrap condition**, not an
+`ONTOLOGY_GAP`. Do not halt. Instead:
+
+1. Copy `docs/harness/templates/knowledge-graph.yaml` to `docs/knowledge-graph.yaml`.
+2. Replace all placeholder values: set `project` to this project's name and
+   set `harnessable_version` to match the content of
+   `docs/harness/vendor/harnessable/HARNESSABLE_VERSION`.
+3. Commit the bootstrapped file as part of the recon commit:
+   `chore: bootstrap docs/knowledge-graph.yaml from template`.
+4. Continue with the Knowledge Graph Obligation using the newly created file.
+
+A bootstrap condition is not a protocol violation. Leaving the absent file
+unaddressed and proceeding with recon is.
+
 ### Pass 6 — Test Coverage Audit
 
 ```bash

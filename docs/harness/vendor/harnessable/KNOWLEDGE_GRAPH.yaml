@@ -507,6 +507,57 @@ concepts:
       Recover: What is the rollback path?
       Prevent: What check or policy would catch this class of failure earlier?
 
+  harnessable.ExternalFact:
+    type: concept
+    definition: >
+      Any claim in a DIP, TIR, or mandate artifact about the current
+      state of a system outside the project's own codebase: package
+      compatibility, API surface, deprecation status, SDK constraints,
+      rate limits, quota values, or authentication schemes.
+      Training knowledge is insufficient for ExternalFacts. They must
+      be verified against a live-fetched source at the installed version.
+    properties:
+      requires_live_verification: true
+      training_knowledge_insufficient: true
+      cite_url_and_date: true
+    verification_pattern: >
+      Resolve installed version → construct versioned URL →
+      fetch live → cite URL and fetch date in Recon Findings.
+    filed_by: [harnessable.Engineer, harnessable.Coder, harnessable.QA]
+    failure_mode: >
+      Citing training knowledge as authoritative for an ExternalFact.
+      Classic presentation: agent fetches docs for a prior major version
+      because training data knew that URL; installed version has different
+      compatibility table. Results in false BLOCKER or false PASS.
+    tool: docs/harness/tools/web_verify.py
+    discovery_class_if_wrong: harnessable.DiscoveryClass.DEVIATION
+    constraint: >
+      A DIP section that makes an ExternalFact claim without a cited
+      URL and fetch date is incomplete. QA may reject the TIR on
+      this basis under Error Mode D2 (DIP failed to capture current
+      reality).
+    see: framework/agents/engineer.md — Pass 4
+
+  harnessable.TrainingCutoff:
+    type: concept
+    definition: >
+      The point in time after which an agent's training data contains
+      no information. All knowledge of external systems — APIs, packages,
+      platform documentation, compatibility tables — reflects the world
+      as it was at or before the cutoff. The cutoff is not visible to
+      the agent during operation and cannot be reliably self-reported.
+    properties:
+      agent_self_knowledge: unreliable
+      affects: [harnessable.ExternalFact]
+    implication: >
+      The TrainingCutoff is not a model limitation to work around —
+      it is an engineering constraint to design for. The same discipline
+      that requires a human engineer to verify specifications before
+      implementing applies here. Design the workflow to fetch live
+      rather than to assume training knowledge is current.
+    mitigation: harnessable.ExternalFact verification via web_verify.py
+    encoded_in: framework/agents/engineer.md — Pass 4
+
 # ─────────────────────────────────────────────────────────────────────────────
 # RSI — RECURSIVE SELF-IMPROVEMENT
 # ─────────────────────────────────────────────────────────────────────────────

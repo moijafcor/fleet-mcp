@@ -129,12 +129,69 @@ Document current state before proposing changes:
 
 ### Pass 4 — External Dependencies
 
-For every external API, SDK, or service the mandate touches:
+**Training knowledge has a cutoff. External facts expire.**
 
-- Confirm the API version in use
-- Note any deprecation warnings
-- Check rate limits, quota constraints
-- Confirm credentials/auth exist and are accessible
+For every external package, API, SDK, or service the mandate touches:
+verify live. Do not rely on training knowledge for any claim about
+current compatibility, API surface, deprecation status, or version
+constraints. Training data is a starting point for knowing where to
+look — not a source of truth for what is true now.
+
+#### Version-bound documentation
+
+Resolve the installed version first. Then fetch the documentation for
+that exact version — not the latest known from training data, not the
+default landing page.
+
+```bash
+# Laravel example — resolve installed major version, fetch versioned docs
+MAJOR=$(php artisan --version 2>/dev/null | grep -oP '\d+' | head -1)
+python3 docs/harness/tools/web_verify.py fetch \
+  "https://laravel.com/docs/${MAJOR}.x/{package}"
+
+# Node.js example — resolve from package.json
+MAJOR=$(node -e "console.log(require('./package.json').engines?.node?.match(/\d+/)?.[0] ?? process.version.match(/\d+/)[0])")
+python3 docs/harness/tools/web_verify.py fetch \
+  "https://nodejs.org/docs/latest-v${MAJOR}.x/api/{module}"
+
+# Python example — resolve from pyproject.toml or requirements
+python3 docs/harness/tools/web_verify.py search \
+  "{package} {installed_version} changelog breaking changes"
+```
+
+For every external dependency in the DIP, record in Recon Findings:
+
+```markdown
+**{Package/API}** — fetched from {URL} on {YYYY-MM-DD}
+Installed version: {version}
+Finding: {what the live docs say}
+```
+
+A compatibility claim in the DIP that cites training knowledge without
+a live-fetched source is a protocol violation. QA may reject a TIR
+that references external compatibility without a cited URL and fetch date.
+
+#### When the URL is unknown
+
+Use web search to discover the authoritative source, then follow
+through to the primary source. Do not cite search results directly.
+
+```bash
+python3 docs/harness/tools/web_verify.py search \
+  "{package} {version} official documentation compatibility"
+```
+
+#### Rate limits, quotas, and API constraints
+
+These change without notice. Always fetch the current pricing or
+limits page for any API the mandate will call in production. A quota
+that was correct at training time may have been revised.
+
+#### Credentials and auth schemes
+
+Confirm the current auth model against live documentation before
+implementing any authentication flow. OAuth flows, token formats, and
+scoping rules are updated frequently.
 
 ### Pass 5 — Memory and Session Context
 

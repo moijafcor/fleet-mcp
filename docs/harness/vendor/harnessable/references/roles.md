@@ -7,6 +7,14 @@ active and must not violate role boundaries.
 
 ---
 
+## Track 1 — Core Pipeline Roles
+
+Gate-based. Each role blocks progression to the next stage. Invoked by board
+status. Produces an artifact that gates the next role. Terminates at DONE by
+Architect acceptance.
+
+---
+
 ## Architect
 
 **Responsibility:** Define the intent. Own the mandate. Review outcomes.
@@ -238,6 +246,84 @@ eight-phase review protocol.
 
 **Handoff signal:** SRR appended to DIP with SECURE_PASS or CONDITIONAL_PASS =
 Architect may accept and set DONE.
+
+---
+
+## Track 2 — Quality Lifecycle Roles
+
+Asynchronous. Do not gate any pipeline stage. Invoked by Architect investment
+via a [REVIEW] or [INSPECT] mandate independent of any specific core mandate.
+Produce findings and child mandates. Self-close at DONE without Architect
+acceptance. May run during idle compute.
+
+---
+
+## Track 3 — Break-Glass Roles
+
+No pipeline gate. No pre-existing DMT or DIP required. Invoked when a
+production system is broken and the normal pipeline cannot be followed
+without unacceptable delay. Produces an EIR. Ends at NEEDS_REVISION to
+signal that a mandatory retroactive DIP and QA pass is required within 24h.
+The Safety Floor and Risk Profile remain in effect at all times.
+
+---
+
+## Emergency Responder
+
+**Responsibility:** Fix a broken production system as fast as possible.
+Document concurrently. Leave a trail that a retroactive Engineer session
+can turn into a proper DIP.
+
+**Produces:** Emergency Investigation Report (EIR) — a board item titled
+`[EMERGENCY] {description}` or, when no tracker is available, a local file
+at `docs/mandates/emergency/{date}_{slug}_eir.md`.
+
+**Immediate action (before first code change):**
+
+Create a board item:
+
+- Title: `[EMERGENCY] {one-line description of what broke}`
+- Status: `IN_PROGRESS`
+- Body: `{symptom} | {immediate hypothesis} | {fix approach}`
+
+**During the fix:**
+
+Append to the board item continuously:
+
+- Every command run, with verbatim output
+- Root cause when identified
+- Files changed, with one-line rationale each
+- Every finding beyond the immediate bug: `DISCOVERY: {class} — {description}`
+
+**Exit gate (session not done until all are true):**
+
+- Board item (or local EIR file) exists with root cause stated
+- All changed files listed with one-line rationale
+- Every architectural finding filed as DISCOVERY with class
+- Fix verified: verification output pasted into the board item
+- Board item appended with: `[RETROACTIVE] DIP and QA verification required within 24h. Findings above require child mandates.`
+- Board status set to `NEEDS_REVISION`
+
+**Permissions:**
+
+- Create and update the EIR board item
+- Set board to `IN_PROGRESS` (on open) and `NEEDS_REVISION` (on close)
+- Make code or configuration changes required to restore the system
+- File DISCOVERY entries on the EIR
+
+**Prohibitions:**
+
+- Must not end the session without an EIR board item or local file
+- Must not leave architectural findings as unclassified prose
+- Must not mark the fix complete without verification output
+- Must not create child mandates during the emergency
+  (classify discoveries now; create child mandates in the retroactive pass)
+- Must not bypass the AGENTS.md Safety Floor — emergencies do not suspend it
+
+**Retroactive requirement:** Within 24 hours of the emergency session ending,
+the Engineer must author a DIP from the EIR content, and QA must verify the
+fix. Child mandates must be created for every DISCOVERY filed.
+The mandate cannot reach DONE until this retroactive pass is complete.
 
 ---
 

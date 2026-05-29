@@ -54,6 +54,7 @@ Points below). After customising, invoke any role with:
 /project:sre "docs/mandates/ops/deploy-vhost.md"
 /project:security "docs/mandates/auth/login_implementation_plan.md"
 /project:architect "Add rate limiting to the public API"
+/project:emergency "login service is returning 500s on all POST requests"
 ```
 
 ---
@@ -141,7 +142,7 @@ Handoff, Exit Gate).
 
 **Examples:**
 
-```
+```text
 /project:engineer 190778951
 /project:coder https://github.com/orgs/YOUR_ORG/projects/1/items/45
 ```
@@ -156,7 +157,7 @@ are recorded in the DIP `## Tracker Ops Log` as `Pending — no board item`.
 
 **Examples:**
 
-```
+```text
 /project:engineer "docs/mandates/my-feature.md"
 /project:coder "docs/mandates/auth/login_implementation_plan.md"
 ```
@@ -172,7 +173,7 @@ always preferable to an inline description at the Coder, QA, or Security stages.
 
 **Example:**
 
-```
+```text
 /project:architect "Add rate limiting to the public API — 100 req/min per token"
 ```
 

@@ -416,6 +416,70 @@ concepts:
       - marking_fix_complete_without_verification_output
       - creating_child_mandates_during_emergency
       - bypassing_agents_md_safety_floor
+    safety_floor_applies: true
+    note: >
+      The Safety Floor declared in AGENTS.md is never suspended
+      during an emergency. A blocked action is a BLOCKER to
+      escalate, not a constraint to bypass.
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      recorded_in: EIR DISCOVERY entries
+
+  harnessable.Spike:
+    type: harnessable.Role
+    definition: >
+      Executes impromptu, exploratory, or micro-fix work within a declared
+      time box and scope boundary. Not reactive to production crisis —
+      proactive and low-stakes. Branch-first: the git branch name states
+      intent and the commit history is the trail. Abandonment is a valid
+      and complete outcome. Escalates to the full pipeline when scope
+      expands beyond the declared intent or Safety Floor is required.
+    produces: [harnessable.SpikeBranch]
+    pipeline_gate: false
+    time_boxed: true
+    default_time_box: 2h
+    max_recommitments: 1
+    valid_exits:
+      Ship:
+        definition: Work complete. PR opened. Commits clean.
+        produces: pull_request
+        child_mandates: required for HARNESS_IMPROVEMENT and ONTOLOGY_GAP
+      Abandon:
+        definition: >
+          Approach invalid or scope larger than declared. One-sentence note
+          filed. Branch deleted. No retroactive DIP.
+        produces: abandonment_note
+      Escalate:
+        definition: >
+          Scope expanded, DIP-level decision required, Safety Floor action
+          needed, or production bug discovered. DEVIATION filed. Branch
+          becomes input to full pipeline mandate or Emergency.
+        produces: harnessable.Mandate
+    prohibited_from:
+      - merging_to_main_without_pr
+      - exceeding_time_box_without_recommitment
+      - expanding_scope_without_deviation
+      - leaving_discoveries_only_in_conversation
+      - bypassing_safety_floor
+      - starting_without_branch
+      - non_descriptive_branch_names
+
+  harnessable.SpikeBranch:
+    type: harnessable.Artifact
+    label: Spike Branch
+    definition: >
+      The git branch created at the start of a Spike session. The branch
+      name states intent. The commit history is the trail. DISCOVERY
+      entries appear in commit messages. The branch either becomes a PR
+      (Ship) or is deleted (Abandon). No separate document required.
+    produced_by: harnessable.Spike
+    path_convention: spike/{short-description}
+    constraints:
+      - branch_name_must_be_descriptive: true
+        invalid_names: [spike/fix, spike/test, spike/misc, spike/temp]
+      - discovery_entries_in_commits_not_conversation: true
+      - no_direct_to_main_merge: true
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ARTIFACTS
@@ -643,6 +707,15 @@ concepts:
           Every finding beyond the immediate bug must be classified as a
           DISCOVERY before the session ends. Unclassified findings in prose
           are a protocol violation.
+    retroactive_pass:
+      required: true
+      window: 24h
+      produces: [harnessable.DIP, harnessable.TIR, harnessable.QAVerdict]
+    enforcement:
+      hook: pre_tool_use/emergency_gate.py
+      mechanism: >
+        Gate file arms before first code edit. Hook blocks Write/Edit/
+        MultiEdit until EIR file exists in docs/mandates/emergency/.
 
   harnessable.ADR:
     type: harnessable.Artifact
@@ -861,10 +934,13 @@ concepts:
         - DIP authored from EIR content by Engineer
         - QA verification of the fix
         - Child mandates created for every DISCOVERY filed during the emergency
+    primary_artifact: harnessable.EIR
     note: >
       An EmergencyMandate cannot reach DONE without completing the retroactive
       DIP and QA pass. The NEEDS_REVISION status is intentional — it signals
       that the mandate is not yet fully governed, not that the fix failed.
+      The EIR substitutes for both DMT and DIP during the emergency.
+      The retroactive pass produces a proper DIP and TIR from EIR content.
 
   harnessable.Harness:
     type: concept

@@ -343,6 +343,66 @@ standard Track 1 state machine from `IN_RECON` onward.
 
 ---
 
+## Track 4 — Spike State Machine
+
+### Spike Overview
+
+The Spike track is a single-role, lightweight track for impromptu, exploratory,
+and micro-fix work. It does not follow the BACKLOG → MANDATED → IN_RECON
+sequence. A board item is optional. The entry condition is a `spike/` branch —
+not a board state. The Spike runs within a declared time box (default 2 hours,
+one re-commitment permitted). Three valid exits: Ship (PR opened), Abandon
+(branch deleted, note filed), or Escalate (DEVIATION filed, branch becomes
+a full pipeline mandate or Emergency input).
+
+### Legal Transitions — Spike
+
+```text
+Spike path (lightweight, optional board item):
+
+(no board item) → spike branch created → Ship:     PR opened
+                                        → Abandon:  branch deleted, note filed
+                                        → Escalate: DEVIATION filed,
+                                                    full mandate created
+
+(with board item) → IN_PROGRESS → DONE          (Ship)
+                               → BACKLOG         (Abandon — returned for
+                                                  future consideration)
+                               → MANDATED         (Escalate — converted to
+                                                  full mandate)
+```
+
+### Illegal Transitions — Spike
+
+```text
+Spike:
+  spike branch → main            (direct merge; PR required always)
+  Spike → DONE without PR or abandonment note
+```
+
+### Spike Invariants
+
+Continuing the numbering from break-glass invariants (1–22):
+
+**23. Branch before code:** A Spike session must have a branch created
+before the first code change. A session without a branch has no trail.
+
+**24. Descriptive branch names:** `spike/{description}` where `{description}`
+is meaningful. Non-descriptive names (`fix`, `test`, `misc`, `temp`) are
+a protocol violation.
+
+**25. Discoveries in commits:** DISCOVERY entries must appear in commit
+messages or PR description — not only in conversation.
+
+**26. PR before merge:** Spike work must not merge to main without a PR.
+No exceptions.
+
+**27. Time box discipline:** after two time boxes on the same Spike,
+the work must escalate to the full pipeline. A third time box
+is a protocol violation.
+
+---
+
 ## Asynchronous Properties
 
 **Timing asynchrony:** [REVIEW] and [INSPECT] mandates are not attached to

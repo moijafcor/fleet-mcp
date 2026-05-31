@@ -38,6 +38,22 @@
 
 ---
 
+## Prerequisites
+
+*Architect declares during DMT authoring. Engineer audits during
+Pass 7. Coder and QA flag BLOCKED_CRITERION if a blocking defect
+is found that is not declared here.*
+
+*If none: state explicitly — "None — all criteria have confirmed
+dependencies." Do not leave this section blank. An empty section
+is ambiguous; a None declaration is an assertion on record.*
+
+| Prerequisite | Type | Status | Blocks Criterion |
+| --- | --- | --- | --- |
+| [bug / service / mandate] | defect / dependency / mandate | confirmed / open | Criterion N |
+
+---
+
 ## Scope
 
 **In Scope:**

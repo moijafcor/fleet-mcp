@@ -265,6 +265,40 @@ cat pytest.ini pyproject.toml setup.cfg 2>/dev/null | grep -A 20 "\[tool.pytest"
 
 Note gaps — the DIP verification checklist must cover what tests don't.
 
+### Pass 7 — Criterion Validity Audit
+
+Read every DMT acceptance criterion and verify it against the actual
+target environment — not against the Architect's assumptions at
+DMT authoring time.
+
+For each criterion:
+
+1. **Verifiability check** — can you, as Engineer, construct a
+   concrete verification command or procedure that QA could run
+   independently? If no: flag the criterion before authoring the DIP.
+
+2. **Dependency check** — does the criterion depend on existing
+   system behaviour? Run the dependency. Confirm it works.
+   Do not assume it works because the DMT says it should.
+
+3. **Blocking defect check** — is there a known or newly discovered
+   defect that would prevent this criterion from passing regardless
+   of this mandate's implementation?
+
+If a blocking defect is found that is not declared in DMT
+`## Prerequisites`:
+
+- File BLOCKER before authoring the DIP:
+    BLOCKER: BLOCKED_CRITERION — Criterion {N} cannot be satisfied.
+    Pre-existing defect: {description and evidence}
+    Criterion text: {exact text from DMT}
+- Do not set PLANNED
+- Escalate to Architect with the finding
+
+The DIP must not be authored over a criterion the Engineer has
+confirmed is unverifiable. A DIP that inherits an invalid criterion
+propagates the problem to the Coder and QA.
+
 ---
 
 ## Recon Commit Protocol
@@ -275,7 +309,7 @@ files — all committed before the DIP is authored.
 
 ### Commit Sequence
 
-1. Complete all recon passes (Passes 1–6, Git State Verification, Knowledge Graph Obligation)
+1. Complete all recon passes (Passes 1–7, Git State Verification, Knowledge Graph Obligation)
 2. Commit all recon artifacts — one commit, message prefix: `chore(recon):`
 3. Author the DIP
 4. Commit the DIP — one commit, message prefix: `docs(dip):`

@@ -72,6 +72,27 @@ For each DMT acceptance criterion:
 2. If no mapping exists: flag as `UNMAPPED_CRITERION` — this is a FAIL condition
 3. Verify the criterion directly, do not rely solely on TIR claims
 
+#### Blocked criterion check
+
+For each criterion, additionally verify:
+
+- Is there a pre-existing bug that prevents independent verification,
+  independent of whether this mandate's implementation is correct?
+
+If yes and it is not declared in DMT ## Prerequisites:
+  Flag as `BLOCKED_CRITERION`. This is a FAIL condition.
+
+If the Coder filed a BLOCKED_CRITERION BLOCKER and the board is
+not currently BLOCKED:
+  Flag as Error Mode D1 — TIR process was not followed correctly.
+  The Coder submitted without halting on a known blocking condition.
+
+**BLOCKED_CRITERION is never CONDITIONAL_PASS eligible.**
+A criterion that cannot be independently verified cannot be
+conditionally passed. It either passes, is rewritten by the
+Architect, or blocks the mandate. QA does not absorb this ambiguity
+— escalate to Architect with evidence.
+
 ### Phase 4 — Verification Checklist Re-execution
 
 Execute every `[REQUIRED]` check yourself:

@@ -84,6 +84,46 @@ Every DMT must include:
   must be verifiable by an agent with no prior context. "Works correctly" is
   not a criterion. "Returns HTTP 200 with a non-empty `items` array when the
   query matches at least one record" is.
+
+### Criterion Validity Checklist
+
+Before setting MANDATED, verify each acceptance criterion passes
+all three rules:
+
+**Rule 1 — Independent verifiability**
+Can QA verify this criterion without asking the Architect what it
+means or how to test it? A criterion that requires Architect
+interpretation to verify is not a criterion — it is a goal.
+Rewrite it as a specific, observable, binary outcome.
+
+**Rule 2 — Dependency confirmation**
+Does this criterion depend on any existing system behaviour,
+service, or component? If yes: is that dependency either confirmed
+working in the target environment right now, OR declared explicitly
+in DMT ## Prerequisites?
+
+A criterion whose dependency is assumed rather than confirmed is
+not valid. Confirm it or declare it.
+
+**Rule 3 — No known blocking defect**
+Is there a known open bug that would prevent this criterion from
+passing even if the implementation of this mandate is correct?
+If yes: the criterion cannot be honestly verified. Do not set
+MANDATED. File a prerequisite mandate to fix the blocking bug
+first, or rewrite the criterion to exclude the dependency on the
+broken behaviour.
+
+A DMT with a criterion that fails any of these rules is not ready
+for MANDATED. Rewrite the criterion, scope it out, or file a
+prerequisite mandate before the pipeline begins.
+
+**Prerequisites**
+Any condition that must be true before an acceptance criterion can
+be independently verified. Declared here by the Architect. Examples:
+a blocking bug must be resolved, a service must be confirmed working,
+a prerequisite mandate must be DONE. Empty means the Architect asserts
+all criteria have verified dependencies — that assertion is on record.
+
 - **Constraints** — what the solution must not do, what it must not break,
   what boundaries it must stay within.
 - **Out-of-scope declarations** — explicit statements of what this mandate

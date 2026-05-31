@@ -401,6 +401,27 @@ No exceptions.
 the work must escalate to the full pipeline. A third time box
 is a protocol violation.
 
+**28. Criterion validity before MANDATED:** the Architect must verify
+all DMT acceptance criteria against the three validity rules
+(independent verifiability, confirmed dependencies, no known
+blocking defect) before setting MANDATED. A DMT with an invalid
+criterion set must not be MANDATED.
+
+**29. Prerequisites block PLANNED:** a mandate whose DMT `## Prerequisites`
+section lists an unresolved prerequisite mandate must not advance
+past PLANNED. Engineer confirms prerequisite status in Pass 7
+before authoring the DIP.
+
+**30. BLOCKED_CRITERION halts TIR:** when a Coder files a
+BLOCKED_CRITERION BLOCKER, the board must be set to BLOCKED
+before the session ends. A TIR submitted without halting on a
+discovered BLOCKED_CRITERION is a protocol violation.
+
+**31. BLOCKED_CRITERION is not CONDITIONAL_PASS eligible:** QA must
+not issue CONDITIONAL_PASS on a mandate with an unresolved
+BLOCKED_CRITERION. The only valid verdicts are FAIL or, after
+Architect resolution, a re-run resulting in PASS.
+
 ---
 
 ## Asynchronous Properties

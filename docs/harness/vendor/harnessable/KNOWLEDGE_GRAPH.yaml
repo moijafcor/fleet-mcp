@@ -1014,6 +1014,59 @@ concepts:
       Recover: What is the rollback path?
       Prevent: What check or policy would catch this class of failure earlier?
 
+  harnessable.BlockedCriterion:
+    type: concept
+    definition: >
+      A DMT acceptance criterion that cannot be independently verified
+      because a pre-existing defect in the system prevents it from
+      passing regardless of the current mandate's implementation.
+      Not a Coder failure — a DMT validity failure that requires
+      Architect intervention.
+    detection_roles: [harnessable.Architect, harnessable.Engineer,
+                      harnessable.Coder, harnessable.QA]
+    discovery_class: harnessable.DiscoveryClass.BLOCKER
+    discovery_label: BLOCKED_CRITERION
+    severity: BLOCKER
+    conditional_pass_eligible: false
+    tir_completion_permitted: false
+    architect_resolution_options:
+      rewrite_criterion:
+        definition: >
+          Remove or replace the criterion to exclude the dependency
+          on the broken behaviour. New criterion must pass all three
+          validity rules independently.
+      file_prerequisite_mandate:
+        definition: >
+          File a mandate to fix the blocking bug. Current mandate
+          declared dependent on prerequisite reaching DONE.
+          Current mandate must not advance past PLANNED until
+          prerequisite is DONE.
+      accept_with_documented_risk:
+        definition: >
+          Architect explicitly accepts the criterion cannot be fully
+          verified. Documented in DMT ## Post-Close Notes.
+          Rare — requires explicit written Architect decision.
+          QA must be informed before issuing any verdict.
+    constraint: >
+      A TIR claiming a BLOCKED_CRITERION passed is a false evidence
+      claim equivalent to fabricating test output. Protocol violation
+      at the same severity as Error Mode D1.
+
+  harnessable.PrerequisiteMandate:
+    type: concept
+    definition: >
+      A mandate that must reach DONE before another mandate's acceptance
+      criteria can be verified. Declared in the dependent mandate's DMT
+      ## Prerequisites section by the Architect. Creates a hard ordering
+      dependency between two mandates.
+    declared_in: "DMT ## Prerequisites section"
+    filed_by: harnessable.Architect
+    blocks_dependent_mandate_at: harnessable.BoardStatus.PLANNED
+    constraint: >
+      A dependent mandate must not advance past PLANNED until all
+      declared prerequisite mandates are DONE. Engineer must confirm
+      prerequisite status during Pass 7 Criterion Validity Audit.
+
   harnessable.ExternalFact:
     type: concept
     definition: >

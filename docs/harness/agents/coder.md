@@ -151,6 +151,53 @@ If the deviation would change the scope significantly: file `BLOCKER` instead, h
 
 ---
 
+### Blocked Criterion BLOCKER
+
+If during implementation you discover a pre-existing bug that prevents
+a DMT acceptance criterion from being satisfied — even if your
+implementation is correct — this is not a DEVIATION. This is a BLOCKER
+that invalidates the criterion.
+
+Protocol:
+
+1. **Stop.** Do not attempt to work around the blocking bug.
+   Do not complete the TIR.
+
+2. **File BLOCKER:**
+
+   ```text
+   BLOCKER: BLOCKED_CRITERION
+   Criterion: {exact text of the DMT criterion}
+   Pre-existing bug: {description, reproduction steps, evidence}
+   Mandated implementation: {what you implemented — correct as written}
+   Why it cannot satisfy the criterion: {specific explanation}
+   ```
+
+3. Comment on the board item:
+
+   "TIR halted. Criterion {N} blocked by pre-existing bug.
+   Mandated implementation is correct but criterion cannot be
+   honestly satisfied. Architect review required."
+
+4. Set board to BLOCKED.
+
+Do not complete or submit the TIR claiming this criterion
+was met. A TIR that asserts a BLOCKED_CRITERION passed is a
+false evidence claim — the same protocol violation as fabricating
+test output. It is worse than an honest BLOCKER because it
+carries the problem forward invisibly to QA and production.
+
+The Architect resolves by one of three paths:
+
+- Rewriting the criterion to exclude the dependency on the broken
+  behaviour
+- Filing a prerequisite mandate and making this mandate dependent
+  on it
+- Accepting the criterion cannot be fully verified, documented in
+  Post-Close Notes (rare — requires explicit Architect decision)
+
+---
+
 ## Pre-Completion Hook Runner
 
 The exit gate is not a passive checklist — it is an **active retry loop**

@@ -980,7 +980,14 @@ concepts:
       rather than hardcoding project-specific values.
     install_path: .claude/commands/{role}.md
     source_template: framework/templates/skills/{role}.md
-    tier: 1
+    tier: framework_owned
+    customisation_layer: AGENTS.md
+    sync_behaviour: unconditional_replace
+    note: >
+      Reclassified from Tier 1 (scaffold) to framework-owned in
+      June 2026 after full-sync audit found all skill customisations
+      were tracker configuration belonging in AGENTS.md.
+      No legitimate project extensions were found.
     arguments_cases: [board_url_or_id, local_file_path, inline_text]
     customisation_points:
       - project_tracker_url_pattern_and_fetch_command

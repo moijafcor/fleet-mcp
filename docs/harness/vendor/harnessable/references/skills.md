@@ -59,6 +59,47 @@ Points below). After customising, invoke any role with:
 
 ---
 
+## Ownership and sync behaviour
+
+Skills are **framework-owned**. They are in the same ownership tier
+as hook scripts — not Tier 1 scaffold. This means:
+
+- `install.sh` overwrites skill files unconditionally on every sync
+- Editing a skill file directly will lose changes on the next sync
+- There is no MANUAL_MERGE path for skills
+
+**All project-specific configuration belongs in `AGENTS.md`.**
+
+The install.sh `apply_tracker()` function reads
+`AGENTS.md ## Project Tracker` and fills the two customisation
+points automatically:
+
+1. Tracker URL pattern and fetch command (Case A detection)
+2. Framework base path (if not `docs/harness/`)
+
+If `apply_tracker()` leaves REPLACE markers unfilled, the cause
+is one of:
+
+- `## Project Tracker` section missing from AGENTS.md
+- Section present but format not recognised by the detector
+- The marker is a manual-fill item (e.g. spike.md high-risk surfaces)
+
+## The three ownership tiers
+
+| Tier | Examples | Sync behaviour | Can project customise? |
+| --- | --- | --- | --- |
+| Tier 2 — vendor | KNOWLEDGE_GRAPH, references/ | Unconditional replace | Never |
+| Tier 1 — scaffold | Agent files, dip.md | Replace if not customised; MANUAL_MERGE if customised | Yes — project owns after copy |
+| Framework-owned | Hooks, tools, **skills** | Unconditional replace | No — AGENTS.md only |
+
+The reclassification of skills from Tier 1 to framework-owned
+happened after the first full-sync audit (June 2026). All
+deployed skill customisations were found to be tracker configuration
+that belonged in AGENTS.md — not genuine project extensions.
+The override architecture was evaluated and found unnecessary.
+
+---
+
 ## Customisation Points
 
 Every skill file contains two `# REPLACE` comments. Both must be updated

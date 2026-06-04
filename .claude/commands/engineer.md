@@ -8,9 +8,11 @@ The task (DMT) to plan is: $ARGUMENTS
 
 `$ARGUMENTS` can be any of the following — detect which case applies and load the DMT accordingly:
 
-**Case A — Board task URL or itemId**
-Matches `github.com/orgs/AdsWireIO/projects` or a bare numeric itemId (e.g. `190778951`).
-Fetch the full item from `AdsWireIO/projects/1` via `gh api graphql`. Read every field, comment, and linked item. Board status updates apply (see Entry Checklist and Handoff).
+**Case A — Board task URL or item ID**
+# Tracker: GitHub Issues
+# Task URL pattern: https://github.com/users/moijafcor/projects/2?pane=issue&itemId={id}
+# Integration: manual
+Matches your board URL or a bare item ID. Fetch the full item via your tracker's API. Read every field, comment, and linked item. Board status updates apply (see Entry Checklist and Handoff).
 
 **Case B — Local file path**
 Matches a file path (starts with `docs/`, `./`, or `/`, or ends in `.md`).
@@ -30,11 +32,11 @@ Follow the Engineer agent protocol at `docs/harness/agents/engineer.md` exactly.
 Load project governance from `AGENTS.md` (Locale, Voice, Risk Profile, Terminology).
 
 Load the harnessable reference library before beginning:
-- `/home/ubuntu/code/harnessable/agents/engineer.md`
-- `/home/ubuntu/code/harnessable/templates/dip.md`
-- `/home/ubuntu/code/harnessable/references/state-machine.md`
-- `/home/ubuntu/code/harnessable/references/continuous-improvement.md`
-- `/home/ubuntu/code/harnessable/references/error-modes.md`
+- `docs/harness/agents/engineer.md`
+- `docs/harness/templates/dip.md`
+- `docs/harness/vendor/harnessable/references/state-machine.md`
+- `docs/harness/vendor/harnessable/references/continuous-improvement.md`
+- `docs/harness/vendor/harnessable/references/error-modes.md`
 
 ---
 
@@ -45,7 +47,7 @@ Before writing a single word of the DIP:
 1. Resolve the DMT using the case detection above.
 2. Confirm this is not a duplicate of an existing mandate (`grep` across `docs/mandates/`).
 3. Confirm no conflicting mandate is IN_PROGRESS or PLANNED.
-4. **Case A only:** Set board status to `IN_RECON` via GraphQL mutation on `AdsWireIO/projects/1`.
+4. **Case A only:** Set board status to `IN_RECON` via your tracker integration.
 
 ---
 
@@ -87,6 +89,6 @@ Use the template at `docs/harness/templates/dip.md`.
 
 When the DIP is complete:
 
-1. **Case A only:** Set board status to `PLANNED` via GraphQL mutation. Add a comment to the DMT item: "DIP authored at `docs/mandates/{path}`. Ready for Coder." (Record in Tracker Ops Log if the comment cannot be posted — draft items have no comment thread.)
+1. **Case A only:** Set board status to `PLANNED` via your tracker integration. Add a comment to the DMT item: "DIP authored at `docs/mandates/{path}`. Ready for Coder." (Record in Tracker Ops Log if the comment cannot be posted — draft items have no comment thread.)
 2. **Cases B and C:** Record the intended `PLANNED` status update in `## Tracker Ops Log` as `Pending — no board item`. The DIP is ready for Coder as soon as all Open Questions are resolved.
 3. Confirm all Open Questions are resolved before considering the DIP handed off.

@@ -2,7 +2,21 @@ You are acting as the Coder agent. Your job is to execute the DIP faithfully, re
 
 The mandate to implement is: $ARGUMENTS
 
-`$ARGUMENTS` may be a path to the DIP file (e.g. `docs/mandates/oauth/passport_oauth_server_implementation_plan.md`) or a project board task URL / itemId. If it is a URL or itemId, fetch the DMT via `gh api graphql` on project `AdsWireIO/projects/1` to find the DIP path from the board item's title or comments.
+`$ARGUMENTS` may be a path to the DIP file (e.g. `docs/mandates/auth/login_implementation_plan.md`) or a board task URL / item ID. If it is a URL or item ID, fetch the item via your tracker's API to find the DIP path from the board item's title or comments.
+
+---
+
+## Resolving the DIP
+
+**Case A — Board task URL or item ID**
+# Tracker: GitHub Issues
+# Task URL pattern: https://github.com/users/moijafcor/projects/2?pane=issue&itemId={id}
+# Integration: manual
+Matches your board URL or a bare item ID. Fetch the item via your tracker's API to find the DIP path.
+
+**Case B — Local file path**
+Matches a file path (starts with `docs/`, `./`, or `/`, or ends in `.md`).
+Read the file directly. Proceed to the Entry Checklist.
 
 ---
 
@@ -13,10 +27,10 @@ Follow the Coder agent protocol at `docs/harness/agents/coder.md` exactly.
 Load project governance from `AGENTS.md` (Locale, Voice, Risk Profile, Terminology).
 
 Load the harnessable reference library:
-- `/home/ubuntu/code/harnessable/agents/coder.md`
-- `/home/ubuntu/code/harnessable/references/error-modes.md`
-- `/home/ubuntu/code/harnessable/references/state-machine.md`
-- `/home/ubuntu/code/harnessable/references/continuous-improvement.md`
+- `docs/harness/agents/coder.md`
+- `docs/harness/vendor/harnessable/references/error-modes.md`
+- `docs/harness/vendor/harnessable/references/state-machine.md`
+- `docs/harness/vendor/harnessable/references/continuous-improvement.md`
 
 ---
 
@@ -27,7 +41,7 @@ Before writing a single line of implementation:
 1. Locate the DIP at `docs/mandates/` (from `$ARGUMENTS` or board comment).
 2. Confirm DIP board status is `PLANNED` — it is illegal to code against an `IN_RECON` DIP.
 3. Read the DIP in full: `## Architecture Decisions`, all `## Implementation Steps`, and `## Verification Checklists` before starting any step.
-4. Set board status to `IN_PROGRESS` via GraphQL mutation on project `AdsWireIO/projects/1`.
+4. **Case A only:** Set board status to `IN_PROGRESS` via your tracker integration.
 5. Open the TIR section in the DIP — add your session identifier and start timestamp.
 
 ---
@@ -60,10 +74,7 @@ If a DIP step cannot be implemented exactly as written:
 
 The `hooks/stop/completion_gate.py` hook runs every command in AGENTS.md `## Completion Gate` when your turn ends. If any command fails, the turn is blocked and the output is fed back to you. Fix the issue and complete again. If the same command fails three times on the same step: file a `BLOCKER`, set board to `BLOCKED`, and stop.
 
-The current gate (from `AGENTS.md`):
-```
-python3 -m pytest tests/ -x -q --tb=short || [ $? -eq 5 ]
-```
+See AGENTS.md `## Completion Gate` for this project's gate commands.
 
 ---
 
@@ -80,7 +91,7 @@ Set board to `IN_REVIEW` only when ALL of the following are true:
 - TIR `## Verification Checklist — Coder Sign-Off` all boxes checked
 
 **After setting IN_REVIEW:**
-- Set board status to `IN_REVIEW` via GraphQL mutation.
+- **Case A only:** Set board status to `IN_REVIEW` via your tracker integration.
 - Comment on the DMT item: "Implementation complete. TIR in DIP at `docs/mandates/{path}`." (Record in Tracker Ops Log if the item has no comment thread.)
 
 Do not touch implementation files again until QA verdict is received.

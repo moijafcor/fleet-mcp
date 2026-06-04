@@ -9,10 +9,10 @@ The mandate to author (or board item to attach the DMT to): $ARGUMENTS
 `$ARGUMENTS` can be any of the following — detect which case applies:
 
 **Case A — Board task URL or item ID**
-Matches `github.com/users/moijafcor/projects/2 or a bare numeric itemId`.
-Tool: GitHub Issues | Integration: gh api graphql (manual)
-Fetch the full item via `gh api graphql`. Read every field, comment, and linked item.
-Board status updates apply (see Entry Checklist and Handoff).
+# Tracker: GitHub Issues
+# Task URL pattern: https://github.com/users/moijafcor/projects/2?pane=issue&itemId={id}
+# Integration: manual
+Matches your board URL or a bare item ID. Fetch the full item via your tracker's API. The DMT will be attached to this board item. Set board status to `MANDATED` when the DMT is complete.
 
 **Case B — Local file path**
 Matches a file path (starts with `docs/`, `./`, or `/`, or ends in `.md`).

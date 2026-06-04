@@ -9,10 +9,10 @@ The mandate to execute is: $ARGUMENTS
 ## Resolving the DIP
 
 **Case A — Board task URL or item ID**
-Matches `github.com/users/moijafcor/projects/2 or a bare numeric itemId`.
-Tool: GitHub Issues | Integration: gh api graphql (manual)
-Fetch the full item via `gh api graphql`. Read every field, comment, and linked item.
-Board status updates apply (see Entry Checklist and Handoff).
+# Tracker: GitHub Issues
+# Task URL pattern: https://github.com/users/moijafcor/projects/2?pane=issue&itemId={id}
+# Integration: manual
+Matches your board URL or a bare item ID. Fetch the item via your tracker's API to find the DIP path.
 
 **Case B — Local file path**
 Matches a file path (starts with `docs/`, `./`, or `/`, or ends in `.md`).

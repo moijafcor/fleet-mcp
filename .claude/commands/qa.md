@@ -2,7 +2,21 @@ You are acting as the QA agent. Your job is adversarial by design — assume not
 
 The mandate to review is: $ARGUMENTS
 
-`$ARGUMENTS` may be a path to the DIP file (e.g. `docs/mandates/oauth/passport_oauth_server_implementation_plan.md`) or a project board task URL / itemId. If it is a URL or itemId, fetch the DMT via `gh api graphql` on project `AdsWireIO/projects/1` to find the DIP path.
+`$ARGUMENTS` may be a path to the DIP file (e.g. `docs/mandates/auth/login_implementation_plan.md`) or a board task URL / item ID. If it is a URL or item ID, fetch the item via your tracker's API to find the DIP path.
+
+---
+
+## Resolving the Mandate
+
+**Case A — Board task URL or item ID**
+# Tracker: GitHub Issues
+# Task URL pattern: https://github.com/users/moijafcor/projects/2?pane=issue&itemId={id}
+# Integration: manual
+Matches your board URL or a bare item ID. Fetch the item via your tracker's API to find the DIP path.
+
+**Case B — Local file path**
+Matches a file path (starts with `docs/`, `./`, or `/`, or ends in `.md`).
+Read the file directly. Proceed to the Entry Checklist.
 
 ---
 
@@ -13,10 +27,10 @@ Follow the QA agent protocol at `docs/harness/agents/qa.md` exactly.
 Load project governance from `AGENTS.md` (Locale, Voice, Risk Profile, Terminology).
 
 Load the harnessable reference library:
-- `/home/ubuntu/code/harnessable/agents/qa.md`
-- `/home/ubuntu/code/harnessable/references/error-modes.md`
-- `/home/ubuntu/code/harnessable/references/state-machine.md`
-- `/home/ubuntu/code/harnessable/references/continuous-improvement.md`
+- `docs/harness/agents/qa.md`
+- `docs/harness/vendor/harnessable/references/error-modes.md`
+- `docs/harness/vendor/harnessable/references/state-machine.md`
+- `docs/harness/vendor/harnessable/references/continuous-improvement.md`
 
 ---
 
@@ -25,7 +39,7 @@ Load the harnessable reference library:
 Before issuing any verdict:
 
 1. Confirm board status is `IN_REVIEW` — do not QA a mandate that has not been submitted.
-2. Fetch the DMT in full via `gh api graphql` on project `AdsWireIO/projects/1`.
+2. **Case A only:** Fetch the DMT in full via your tracker's API.
 3. Read the DIP in full — all sections including `## Architecture Decisions`, `## Implementation Steps`, `## Verification Checklists`, and `## Task Implementation Report`.
 4. Confirm you were NOT the Coder for this mandate — role collapse produces an invalid verdict.
 
@@ -94,11 +108,11 @@ Append to DIP `## QA Verdict`:
 5. Verdict Rationale: 1–3 sentences
 
 **After PASS / CONDITIONAL_PASS:**
-- Set board to `VERIFIED` via GraphQL mutation on project `AdsWireIO/projects/1`.
+- **Case A only:** Set board to `VERIFIED` via your tracker integration.
 - Comment on the DMT item: "QA verdict: [PASS/CONDITIONAL_PASS]. DIP at `docs/mandates/{path}`."
 
 **After FAIL:**
-- Set board to `NEEDS_REVISION` via GraphQL mutation.
+- **Case A only:** Set board to `NEEDS_REVISION` via your tracker integration.
 - Comment on the DMT item: "QA verdict: FAIL. [one-line summary of primary failure]."
 - Do not suggest fixes — identify failures precisely and leave the solution to the Coder.
 

@@ -14,3 +14,4 @@ dist/
 examples/adswire/.harness/
 .harness/
 !.claude/commands/
+.harnessable/logs/

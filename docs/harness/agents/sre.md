@@ -56,6 +56,50 @@ Before touching any system:
 - [ ] Set board status to `IN_PROGRESS` via the tracker integration
 - [ ] Open the SIR section in the DIP — add your session identifier and start timestamp
 
+### Credential Operations Setup
+
+If the DIP `## Credential Operations` section declares credential
+files this mandate will write, verify, or transfer: create the
+session-scoped exemption file before any credential step.
+
+```bash
+python3 - << 'PYEOF'
+import json, pathlib
+from datetime import datetime, timezone, timedelta
+
+# Read declared operations from DIP
+# Replace with actual values from DIP ## Credential Operations
+approved_paths = [
+    # List credential file paths exactly as declared in DIP
+    # e.g. ".env", "config/database.yml"
+]
+mandate_path = "docs/mandates/{path}"  # Replace with actual DIP path
+
+ops = {
+    "session_id": "$(date -u +%Y%m%dT%H%M%SZ)",
+    "mandate": mandate_path,
+    "approved_paths": approved_paths,
+    "expires_at": (
+        datetime.now(timezone.utc) + timedelta(hours=4)
+    ).isoformat(),
+    "note": "SRE session — verify-only operations only"
+}
+
+p = pathlib.Path('.harnessable/credential_ops.json')
+p.parent.mkdir(parents=True, exist_ok=True)
+p.write_text(json.dumps(ops, indent=2))
+print(f"Credential ops armed: {approved_paths}")
+PYEOF
+```
+
+This enables `wc -l`, `md5sum`, `grep -c "^KEY"` and other
+verify-only operations on the declared files. It does not enable
+`cat`, `head`, `tail`, or any content-exposing command.
+Content-exposing commands are always blocked regardless of exemption.
+
+The exemption file is automatically removed at session end by
+`hooks/stop/credential_ops_cleanup.py`.
+
 ---
 
 ## Pre-Change State Capture (mandatory Step 0)

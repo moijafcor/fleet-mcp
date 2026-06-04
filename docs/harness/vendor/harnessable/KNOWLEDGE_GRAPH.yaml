@@ -1268,3 +1268,46 @@ concepts:
     note: >
       The MetaMandate is not a suggestion. When the threshold is crossed,
       creating it is a precondition for setting DONE on the triggering mandate.
+
+  harnessable.CredentialOps:
+    type: concept
+    definition: >
+      A session-scoped declaration of credential files an SRE mandate
+      will write, verify, or transfer. Declared in DIP ## Credential
+      Operations, signed off at MANDATED. Creates a governed exemption
+      in secrets_guard for verify-only operations on declared files.
+      Never permits content-exposing reads. Cleaned up at session end.
+    path: .harnessable/credential_ops.json
+    scope: session
+    fields:
+      session_id: ISO timestamp of session start
+      mandate: path to the authorising DIP
+      approved_paths: list of credential file paths
+      expires_at: ISO 8601 expiry (max 4 hours from creation)
+    lifecycle:
+      created_by: harnessable.SRE at session start
+      cleaned_by: stop/credential_ops_cleanup.py
+    audit: every exempted access logged with credential_op_exemption:true
+
+  harnessable.VerifyOnlyPattern:
+    type: concept
+    definition: >
+      A shell command that accesses credential file metadata or
+      structure without exposing content. The only class of credential
+      file access that can be governed by CredentialOps exemption.
+    examples:
+      - "wc -l {file}"
+      - "wc -c {file}"
+      - "md5sum {file}"
+      - "sha256sum {file}"
+      - "stat {file}"
+      - "ls -la {file}"
+      - "grep -c '^KEY' {file}"
+      - "grep -q '^KEY=' {file}"
+    always_blocked_regardless_of_exemption:
+      - "cat {file}"
+      - "less {file}"
+      - "head {file}"
+      - "tail {file}"
+      - "echo $VAR"
+      - "printenv"

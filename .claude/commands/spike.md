@@ -16,7 +16,6 @@ Load project governance from `AGENTS.md`
 (Locale, Voice, Risk Profile, Terminology, Safety Floor).
 
 Load the harnessable reference library:
-# REPLACE: update base path if not docs/harness/
 - `docs/harness/agents/spike.md`
 - `docs/harness/vendor/harnessable/references/state-machine.md`
 
@@ -42,5 +41,8 @@ Before writing a single line of implementation:
 
 3. Declare the time box (default 2h) and scope boundary (one sentence).
    If the work touches auth, payments, data migrations, or production
-   configuration: stop and escalate to the full pipeline first.
-   # REPLACE: add project-specific high-risk surface areas here
+   configuration: stop and escalate.
+   Project-specific high-risk surfaces:
+   - Any change to docs/knowledge-graph.yaml (schema changes affect the static layer contract)
+   - Any change to .claude/settings.json or .claude/settings.local.json
+   - Any push to the remote

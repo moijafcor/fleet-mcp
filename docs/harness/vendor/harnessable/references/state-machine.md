@@ -6,8 +6,8 @@ The harnessable framework operates two distinct state machines on two separate
 tracks. **Track 1 — Core Pipeline** is synchronous and gate-based: each role
 blocks progression to the next stage until its artifact is complete and
 accepted. **Track 2 — Quality Lifecycle** is asynchronous and
-investment-based: the Reviewer and Inspector operate on a separate clock,
-produce findings and child mandates rather than verdicts, and do not gate any
+investment-based: the Reviewer, Inspector, and Analyst operate on a separate
+clock, produce lifecycle artifacts rather than verdicts, and do not gate any
 core pipeline stage in any status. See the [Track Interaction](#track-interaction)
 section for how discoveries flow between tracks.
 
@@ -150,18 +150,18 @@ These conditions must hold at all times:
 
 | Status | Meaning | Who sets it |
 | --- | --- | --- |
-| `BACKLOG` | [REVIEW]/[INSPECT] mandate not yet prioritised | Architect |
-| `MANDATED` | Scope, time budget, and threshold declared; ready | Architect |
-| `IN_PROGRESS` | Reviewer or Inspector is actively running | Reviewer / Inspector |
-| `DONE` | Report filed, child mandates created | Reviewer / Inspector |
+| `BACKLOG` | [REVIEW]/[INSPECT]/[RESEARCH] mandate not yet prioritised | Architect |
+| `MANDATED` | Scope and lifecycle-specific requirements declared; ready | Architect |
+| `IN_PROGRESS` | Reviewer, Inspector, or Analyst is actively running | Reviewer / Inspector / Analyst |
+| `DONE` | CRR, PIR, or IB filed; child mandates created when applicable | Reviewer / Inspector / Analyst |
 | `BLOCKED` | Access unavailable (Inspector only) | Inspector |
 
 ### Legal Transitions — Quality Lifecycle
 
 ```text
 BACKLOG       → MANDATED      (Architect scopes and prioritises)
-MANDATED      → IN_PROGRESS   (Reviewer/Inspector begins)
-IN_PROGRESS   → DONE          (report filed, child mandates created)
+MANDATED      → IN_PROGRESS   (Reviewer/Inspector/Analyst begins)
+IN_PROGRESS   → DONE          (CRR/PIR/IB filed; child mandates created when applicable)
 IN_PROGRESS   → BLOCKED       (Inspector: live system unavailable)
 BLOCKED       → IN_PROGRESS   (access restored)
 ```
@@ -173,9 +173,59 @@ MANDATED      → DONE           (work was not done; filing an empty report)
 IN_PROGRESS   → VERIFIED       (quality lifecycle has no VERIFIED state)
 ANY           → NEEDS_REVISION (if review was inadequate, a new mandate is
                                 created; the original is not revised)
-ANY           → DONE set by Architect  (Reviewer/Inspector self-closes;
+ANY           → DONE set by Architect  (Reviewer/Inspector/Analyst self-closes;
                                         no Architect acceptance gate)
 ```
+
+[RESEARCH] illegal transitions:
+  IN_PROGRESS → DONE without IB filed
+  ANY → DMT created by Analyst (Analyst may recommend; only
+    Architect may create DMTs)
+
+---
+
+## Track 5 — Orchestrator State Machine
+
+```text
+Orchestrator state machine:
+INITIALISING → (templated) → AUTHORING
+INITIALISING → (novel)     → RESEARCHING → AUTHORING
+AUTHORING    → EXECUTING
+EXECUTING    → (ACT)       → AUTHORING (TOM revision)
+             → (SKIP)      → EXECUTING (continues)
+             → (all DONE)  → DONE
+```
+
+Orchestrator illegal transitions:
+
+```text
+AUTHORING    → DONE without EXECUTING
+EXECUTING    → DONE without verifying parent TOM outcomes
+ANY          → authoring a DIP (Orchestrator does not write DIPs)
+RESEARCHING  → mandatory (Analyst use is always discretionary)
+```
+
+---
+
+## Track 6 — Narrator State Machine
+
+```text
+Narrator state machine:
+READING DIPs → CALIBRATING per destination
+             → PRODUCING (one file per destination)
+             → CP-SUMMARY
+             → DONE
+```
+
+Narrator illegal transitions:
+
+```text
+ANY → exposing implementation details to non-technical audiences
+ANY → producing without reading ## Communication Channels
+ANY → producing generic content without destination shaping
+```
+
+---
 
 ### Quality Lifecycle Invariants
 
@@ -183,13 +233,13 @@ Continuing the numbering from core pipeline invariants (1–11):
 
 **12. No pipeline gate:** A quality lifecycle mandate in any status does not block any core pipeline mandate from progressing.
 
-**13. Self-terminating:** The Reviewer or Inspector sets DONE. No Architect acceptance required.
+**13. Self-terminating:** The Reviewer, Inspector, or Analyst sets DONE. No Architect acceptance required.
 
-**14. DMT is the plan:** No PLANNED status; the [REVIEW] or [INSPECT] DMT declares scope, depth, and time budget.
+**14. DMT is the plan:** No PLANNED status; the [REVIEW], [INSPECT], or [RESEARCH] DMT declares the lifecycle-specific scope and completion criteria.
 
-**15. Output is mandates:** The terminal artifact is a CRR or PIR plus child mandates. No verdict is issued.
+**15. Output is a lifecycle artifact:** The terminal artifact is a CRR, PIR, or IB. Reviewer and Inspector findings above the Architect's threshold become child mandates; Analyst recommendations do not become DMTs unless the Architect creates them. No verdict is issued.
 
-**16. Compute scheduling:** [REVIEW] mandates may be set IN_PROGRESS during idle compute — when no core mandates are IN_PROGRESS or IN_REVIEW.
+**16. Compute scheduling:** [REVIEW] and [RESEARCH] mandates may be set IN_PROGRESS during idle compute — when no core mandates are IN_PROGRESS or IN_REVIEW, and Analyst web access is available.
 
 ### State Diagram (ASCII) — Quality Lifecycle
 
@@ -201,19 +251,19 @@ Continuing the numbering from core pipeline invariants (1–11):
   ┌────▼────┐
   │MANDATED │
   └────┬────┘
-       │ Reviewer / Inspector
+       │ Reviewer / Inspector / Analyst
   ┌────▼──────┐
   │IN_PROGRESS│◄──────────────────┐
   └─────┬─────┘                   │ access restored
         │                    ┌────┴───────┐
         ├───────────────────►│  BLOCKED   │ (Inspector only)
         │ system unavailable └────────────┘
-        │ report filed
+        │ CRR / PIR / IB filed
   ┌─────▼────┐
   │   DONE   │
   └──────────┘
        │
-       └──► child mandates → Core Pipeline BACKLOG → Architect prioritises
+       └──► findings / IB recommendations → Architect prioritises
 ```
 
 ---
@@ -223,35 +273,37 @@ Continuing the numbering from core pipeline invariants (1–11):
 ### Core Pipeline → Quality Lifecycle
 
 The Architect observes DONE on a core mandate and decides to invest in quality
-review. The Architect creates a [REVIEW] or [INSPECT] mandate. This is not
-automatic. It is not required. It is Architect-discretionary — a deliberate
+review or research. The Architect creates a [REVIEW], [INSPECT], or [RESEARCH]
+mandate. This is not automatic. It is not required. It is Architect-discretionary — a deliberate
 investment decision independent of any specific core mandate.
 
 ### Quality Lifecycle → Core Pipeline
 
 The Reviewer or Inspector produces child mandates at DONE. Child mandates enter
-the core pipeline at BACKLOG. The Architect prioritises them like any other
-BACKLOG item. The gap between a finding and its remediation is explicit —
-measured in mandate cycles, not hours.
+the core pipeline at BACKLOG. The Analyst produces an IB with recommendations;
+only the Architect may turn those recommendations into DMTs. The Architect
+prioritises all resulting work like any other BACKLOG item. The gap between a
+finding, recommendation, and remediation is explicit — measured in mandate
+cycles, not hours.
 
 ### Feedback Loop
 
 ```text
 Core Pipeline                          Quality Lifecycle
 ─────────────────────────────────────────────────────────────────
-BACKLOG → ... → DONE ──────────────►  [REVIEW]/[INSPECT] mandate
+BACKLOG → ... → DONE ──────────────►  [REVIEW]/[INSPECT]/[RESEARCH] mandate
                   ▲                         │
                   │                         ▼
                   │                    IN_PROGRESS
                   │                         │
                   │                         ▼
                   │                       DONE
-                  │                    (CRR / PIR)
+                  │                  (CRR / PIR / IB)
                   │                         │
-                  │                   child mandates
+                  │          child mandates or IB recommendations
                   │                         │
                   └─────────── BACKLOG ◄─────┘
-                               (Architect prioritises)
+                               (Architect prioritises or mandates from IB)
 ```
 
 ---
@@ -422,20 +474,28 @@ not issue CONDITIONAL_PASS on a mandate with an unresolved
 BLOCKED_CRITERION. The only valid verdicts are FAIL or, after
 Architect resolution, a re-run resulting in PASS.
 
+**32. No training knowledge as source:** an IB claim without a
+fetched URL and date is a protocol violation equivalent to
+filing a MUST_FIX finding without a reproducible condition.
+
 ---
 
 ## Asynchronous Properties
 
-**Timing asynchrony:** [REVIEW] and [INSPECT] mandates are not attached to
+**Timing asynchrony:** [REVIEW], [INSPECT], and [RESEARCH] mandates are not attached to
 specific core mandate board items. They target components, service boundaries,
 or traffic surfaces — independently of what is currently IN_PROGRESS or
 IN_REVIEW on the core pipeline.
 
-**Compute asynchrony:** Reviewer mandates may be scheduled during idle compute
-without competing with active development work. Invariant 16 formalises this: a
-[REVIEW] mandate may begin when no core mandates are IN_PROGRESS or IN_REVIEW.
+**Compute asynchrony:** Reviewer and Analyst mandates may be scheduled during
+idle compute without competing with active development work. Invariant 16
+formalises this: a [REVIEW] or [RESEARCH] mandate may begin when no core
+mandates are IN_PROGRESS or IN_REVIEW, with Analyst sessions also requiring web
+access.
 
-**Output asynchrony:** Findings re-enter the core pipeline at BACKLOG. The
-Architect determines when they are scheduled. There is no direct connection
-between a quality lifecycle finding and the next sprint — the gap is
-intentional, explicit, and Architect-controlled.
+**Output asynchrony:** Findings and IB recommendations re-enter Architect
+prioritisation. Reviewer and Inspector findings above threshold become BACKLOG
+child mandates; Analyst recommendations become DMTs only if the Architect
+creates them. There is no direct connection between a quality lifecycle output
+and the next sprint — the gap is intentional, explicit, and
+Architect-controlled.

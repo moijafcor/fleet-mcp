@@ -38,7 +38,7 @@ concepts:
     subclasses: [harnessable.DMT, harnessable.DIP, harnessable.TIR,
                  harnessable.SIR, harnessable.QAVerdict, harnessable.ADR,
                  harnessable.SRR, harnessable.CRR, harnessable.PIR,
-                 harnessable.EIR]
+                 harnessable.EIR, harnessable.IB]
     properties:
       append_only: true
       requires_predecessor: true
@@ -53,7 +53,8 @@ concepts:
     subclasses: [harnessable.Architect, harnessable.Engineer,
                  harnessable.Coder, harnessable.SRE, harnessable.QA,
                  harnessable.Security, harnessable.Reviewer,
-                 harnessable.Inspector, harnessable.EmergencyResponder]
+                 harnessable.Inspector, harnessable.EmergencyResponder,
+                 harnessable.Analyst]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -80,7 +81,8 @@ concepts:
       gate any pipeline stage. Invoked by Architect investment via a [REVIEW]
       or [INSPECT] mandate. Produces findings and child mandates. Self-closes
       at DONE without Architect acceptance. May run during idle compute.
-    subclasses: [harnessable.Reviewer, harnessable.Inspector]
+    subclasses: [harnessable.Reviewer, harnessable.Inspector,
+                 harnessable.Analyst]
     pipeline_gate: false
     invocation: architect_investment_mandate
     output: findings_and_child_mandates
@@ -385,6 +387,185 @@ concepts:
       frequency: every_session
       conditional_on_failure: false
       recorded_in: PIR Framework Observation section
+
+  harnessable.Analyst:
+    type: harnessable.QualityLifecycleRole
+    definition: >
+      Gathers intelligence from the world outside the codebase —
+      competitor moves, user pain signals, practitioner discourse,
+      technology shifts — and synthesises it into patterns the
+      Architect can act on. Every output is an ExternalFact.
+      Training knowledge is not a valid source. Produces an
+      Intelligence Brief; does not produce DMTs.
+    produces: [harnessable.IB]
+    consumes: external_signals_via_web
+    invoked_by: harnessable.Architect
+    invocation_model: >
+      [RESEARCH] mandate declaring domain, signal types,
+      time window, and source platforms.
+    pipeline_position: quality_lifecycle
+    pipeline_gate: false
+    primary_tool: docs/harness/tools/web_verify.py
+    training_knowledge_as_source: never
+    prohibited_from:
+      - citing_training_knowledge_as_source
+      - treating_single_signal_as_pattern
+      - authoring_dmts
+      - asserting_competitor_capability_without_fetched_evidence
+      - elevating_competitor_claim_without_corroboration
+    rsi_obligations:
+      frequency: every_session
+      conditional_on_failure: false
+      recorded_in: IB Framework Observation section
+
+  harnessable.Orchestrator:
+    type: harnessable.Role
+    definition: >
+      The CTO of the engagement. Receives marketplace signals,
+      classifies work as templated or novel, commissions domain
+      Architects per constituent TOM, dispatches Analysts when
+      facing genuine unknowns, synthesises feedback into TOM
+      versions, and judges when outcomes are achieved. The only
+      role with authority over the full engagement portfolio.
+      Does not implement, write DIPs, or write code.
+    produces: [harnessable.TOM]
+    state_machine: [INITIALISING, RESEARCHING, AUTHORING,
+                    EXECUTING, DONE]
+    analyst_use: discretionary
+    narrator_use: discretionary
+    pipeline_position: above_pipeline
+    pipeline_gate: false
+
+  harnessable.TOM:
+    type: harnessable.Artifact
+    label: Target Outcome Mandate
+    definition: >
+      The founding document of any body of work. Authored by the
+      Orchestrator. Declares target outcomes in business language,
+      domain context, constraints, and success metrics. Every DMT
+      derives from a TOM. The TOM is not written once — it is the
+      current best synthesis of everything the discovery loop has
+      produced so far. Each version is a snapshot of accumulated
+      discovery.
+    produced_by: harnessable.Orchestrator
+    consumed_by: harnessable.Architect
+    path_convention: docs/toms/{slug}/TOM-{version}-{domain}.md
+    slug_format: TOM-{version}-{domain}
+    versioning: >
+      Each pivot increments the version. TOM v1.0 → v1.1 → v2.0
+      is the business decision record.
+    hierarchy:
+      parent: TOM-{version}-{product}
+      constituent: TOM-{version}-{fleet-member}
+
+  harnessable.TemplatedEngagement:
+    type: concept
+    definition: >
+      An engagement the Orchestrator recognises from prior completed
+      TOMs. No Analyst dispatch needed. The Orchestrator proceeds
+      directly to AUTHORING from pattern. What is novel today
+      becomes templated tomorrow.
+
+  harnessable.NovelEngagement:
+    type: concept
+    definition: >
+      An engagement containing genuine unknowns the Orchestrator
+      cannot resolve from pattern. Requires RESEARCHING phase.
+      Analyst dispatched per gap or hypothesis.
+
+  harnessable.Narrator:
+    type: harnessable.QualityLifecycleRole
+    definition: >
+      The voice of the finished work to the marketplace. Reads
+      DIPs (the finished good) and produces destination-aware
+      communication calibrated to each audience. Simultaneously
+      a technical writer, SEO copywriter, marketer, PR spokesperson,
+      and outreach ambassador. Never exposes implementation details
+      to non-technical audiences. Produces a Communication Package.
+    produces: [harnessable.CP]
+    raw_material: harnessable.DIP
+    invoked_by: harnessable.Orchestrator
+    invocation_model: >
+      discretionary — not every DONE warrants a Narrator run
+    personas: [technical_writer, seo_copywriter, marketer,
+               pr_spokesperson, outreach_ambassador]
+    pipeline_position: quality_lifecycle
+    pipeline_gate: false
+
+  harnessable.CP:
+    type: harnessable.Artifact
+    label: Communication Package
+    definition: >
+      Produced by the Narrator. A collection of audience-specific
+      communication artifacts, one per declared destination.
+      Each artifact is shaped for its destination's format,
+      audience, and register. Contains no implementation details
+      for non-technical audiences.
+    produced_by: harnessable.Narrator
+    path_convention: narrator-out/{feature-slug}/
+    summary: narrator-out/{feature-slug}/CP-SUMMARY.md
+
+  harnessable.CommunicationChannel:
+    type: concept
+    definition: >
+      A declared destination in AGENTS.md ## Communication Channels.
+      Specifies the channel URL, format, and audience. The Narrator
+      reads the channel registry before producing any output.
+    declared_in: AGENTS.md ## Communication Channels
+    consumed_by: harnessable.Narrator
+
+  harnessable.IB:
+    type: harnessable.Artifact
+    label: Intelligence Brief
+    definition: >
+      Produced by the Analyst after gathering and synthesising
+      external signals. Contains a signal inventory with source
+      classification, identified patterns with confidence levels,
+      and implications for the Architect. Does not contain DMTs.
+      The Analyst recommends; the Architect decides.
+    produced_by: harnessable.Analyst
+    consumed_by: harnessable.Architect
+    path_convention: >
+      docs/mandates/research/{domain}_{date}_intelligence_brief.md
+    pipeline_position: quality_lifecycle
+    finding_classes:
+      pattern:
+        confidence_levels: [HIGH, MEDIUM, OBSERVED]
+        minimum_signals:
+          HIGH: 5
+          MEDIUM: 3
+          OBSERVED: 1
+    constraint: >
+      Every claim must have a fetched URL and date.
+      Training knowledge may not appear as a source.
+
+  harnessable.SignalClass:
+    type: concept
+    definition: >
+      Classification applied to every signal gathered by the Analyst.
+      Determines epistemic weight in synthesis.
+    values:
+      VERIFIED_USER:
+        definition: >
+          Documented user of the product or category speaking from
+          direct experience. Highest weight for product feedback.
+      PRACTITIONER:
+        definition: >
+          Demonstrably skilled domain professional. Highest weight
+          for technical assessment and workflow patterns.
+      ANALYST_OPINION:
+        definition: >
+          Industry analyst, researcher, or journalist. Useful for
+          market framing. Moderate weight.
+      COMMUNITY_SIGNAL:
+        definition: >
+          Unverified forum or social media participant. Weight scales
+          with N independent sources, not individual post quality.
+      COMPETITOR_CLAIM:
+        definition: >
+          Competitor's own marketing, documentation, or changelog.
+          Face-value skepticism. Always pair with VERIFIED_USER or
+          COMMUNITY_SIGNAL where possible.
 
   harnessable.EmergencyResponder:
     type: harnessable.Role
@@ -875,7 +1056,8 @@ concepts:
         Exactly one of the two is required before the QA Verdict.
     tracked_via: harnessable.BoardStatus
     subclasses: [harnessable.MetaMandate, harnessable.ReviewMandate,
-                 harnessable.InspectMandate, harnessable.EmergencyMandate]
+                 harnessable.InspectMandate, harnessable.EmergencyMandate,
+                 harnessable.ResearchMandate]
     security_review_required: optional
     note: >
       Set by Architect in DMT. When true, Security review runs after
@@ -1275,6 +1457,19 @@ concepts:
     note: >
       The MetaMandate is not a suggestion. When the threshold is crossed,
       creating it is a precondition for setting DONE on the triggering mandate.
+
+  harnessable.ResearchMandate:
+    type: harnessable.Mandate
+    definition: >
+      A mandate scoping an Analyst session. Declares investigation
+      domain, signal types, time window, source platforms, and the
+      decision the IB should inform. Managed by Analyst to DONE
+      without Architect acceptance gate.
+    title_prefix: "[RESEARCH]"
+    subclass_of: harnessable.Mandate
+    dmt_must_declare: [domain, signal_types, time_window,
+                       source_platforms, output_expectation]
+    sets_done: harnessable.Analyst
 
   harnessable.CredentialOps:
     type: concept

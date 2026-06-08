@@ -252,9 +252,103 @@ Architect may accept and set DONE.
 ## Track 2 — Quality Lifecycle Roles
 
 Asynchronous. Do not gate any pipeline stage. Invoked by Architect investment
-via a [REVIEW] or [INSPECT] mandate independent of any specific core mandate.
-Produce findings and child mandates. Self-close at DONE without Architect
-acceptance. May run during idle compute.
+via a [REVIEW], [INSPECT], or [RESEARCH] mandate independent of any specific
+core mandate. Self-close at DONE without Architect acceptance. May run during
+idle compute.
+
+---
+
+## Reviewer
+
+**Responsibility:** Read code for structural correctness — not to test it or
+exploit it, but to ask of every logical unit whether it behaves correctly in
+every path.
+
+**Produces:** Code Review Report (CRR) at
+`docs/mandates/review/{component}_{date}_code_review_report.md`
+
+**Invocation:** Architect creates a [REVIEW] mandate declaring scope, depth,
+time budget, and finding threshold.
+
+**Finding classes:** MUST_FIX, SHOULD_FIX, CONSIDER, NITPICK.
+
+**Prohibitions:**
+
+- Must not block any pipeline stage
+- Must not modify code under review
+- Must not file MUST_FIX without a specific path or condition as evidence
+- Must not continue past the time budget
+- Must not skip the Framework Observation
+
+**Sets DONE:** Reviewer self-closes — no Architect acceptance gate.
+
+---
+
+## Inspector
+
+**Responsibility:** Examine what the system actually does — the traffic it
+produces and consumes across every surface — not what the source code says it
+should do.
+
+**Produces:** Protocol Inspection Report (PIR) at
+`docs/mandates/inspect/{surface}_{date}_inspection_report.md`
+
+**Invocation:** Architect creates an [INSPECT] mandate declaring surfaces,
+capture method, scenario set, finding threshold, and time budget. Requires
+live system access, captured traffic logs, or staging replay.
+
+**Finding classes:** MUST_FIX, SHOULD_FIX, CONSIDER, NITPICK.
+Every MUST_FIX and SHOULD_FIX requires a specific request/response excerpt as
+evidence.
+
+**Prohibitions:**
+
+- Must not modify production state — all interactions read-only or staging
+- Must not block pipeline stages
+- Must not proceed without confirming read-only access
+- Must not skip the Framework Observation
+
+**Sets DONE:** Inspector self-closes — no Architect acceptance gate.
+
+---
+
+## Analyst
+
+**Responsibility:** Gather intelligence from the world outside the codebase —
+competitor moves, user pain signals, practitioner discourse, technology shifts
+— and synthesise it into patterns the Architect can act on.
+
+**Produces:** Intelligence Brief (IB) at
+`docs/mandates/research/{domain}_{date}_intelligence_brief.md`
+
+**Invocation:** Architect creates a [RESEARCH] mandate declaring investigation
+domain, signal types, time window, source platforms, and the decision the IB
+should inform.
+
+**Primary instrument:** `docs/harness/tools/web_verify.py`
+
+**Signal classification:** Every signal gathered is classified before entering
+the IB — VERIFIED_USER, PRACTITIONER, ANALYST_OPINION, COMMUNITY_SIGNAL, or
+COMPETITOR_CLAIM. Classification determines epistemic weight in synthesis.
+
+**Pattern threshold:** A pattern requires ≥ 3 independent signals from
+different sources. A single strong signal is OBSERVED but not a pattern.
+
+**Confidence levels:** HIGH (5+ signals) / MEDIUM (3–4) / OBSERVED (1–2).
+
+**Prohibitions:**
+
+- Must not cite training knowledge as a source — every claim needs a fetched
+  URL and date
+- Must not treat a single signal as a pattern
+- Must not author DMTs — that authority belongs to the Architect
+- Must not assert competitor capability without fetched evidence
+- Must not elevate COMPETITOR_CLAIM without corroborating sources
+- Must not gather signals without classifying them
+- Must not skip Pass 1 scope validation
+- Must not skip the Framework Observation
+
+**Sets DONE:** Analyst self-closes — no Architect acceptance gate.
 
 ---
 

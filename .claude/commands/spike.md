@@ -41,8 +41,8 @@ Before writing a single line of implementation:
 
 3. Declare the time box (default 2h) and scope boundary (one sentence).
    If the work touches auth, payments, data migrations, or production
-   configuration: stop and escalate.
-   Project-specific high-risk surfaces:
+   configuration: stop and escalate to the full pipeline first.
+   Project-specific high-risk surfaces (from AGENTS.md):
    - Any change to docs/knowledge-graph.yaml (schema changes affect the static layer contract)
    - Any change to .claude/settings.json or .claude/settings.local.json
    - Any push to the remote

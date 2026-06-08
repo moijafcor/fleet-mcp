@@ -55,6 +55,7 @@ Points below). After customising, invoke any role with:
 /project:security "docs/mandates/auth/login_implementation_plan.md"
 /project:architect "Add rate limiting to the public API"
 /project:emergency "login service is returning 500s on all POST requests"
+/project:analyst "Google Ads automated bidding for SMBs, 90 days, competitor moves + user pain"
 ```
 
 ---

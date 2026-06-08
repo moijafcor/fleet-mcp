@@ -48,4 +48,4 @@ Before gathering any signal:
 3. Declare scope in the IB header before gathering any signals.
 
 4. Set board to IN_PROGRESS.
-   Via GitHub Issues (manual): update this item's status to IN_PROGRESS at https://github.com/users/moijafcor/projects/2
+   # REPLACE: adapt board mutation to your tracker integration

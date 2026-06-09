@@ -39,6 +39,31 @@ Before issuing any verdict:
 
 ---
 
+## Rubric Evaluation Protocol
+
+The QA role is the grader in the harnessable Rubric loop. The
+Rubric has three layers. Evaluate them in sequence:
+
+**Layer 1 — Acceptance Criteria (from DMT)**
+What the Architect declared as done. Business-level. Did the
+implementation achieve what the mandate promised?
+
+**Layer 2 — Verification Checklists (from DIP)**
+What the Engineer specified as implementation-level done.
+Every [REQUIRED] item is a mandatory criterion. Re-execute
+each check independently — do not trust the TIR's self-report.
+
+**Layer 3 — Completion Gate (from AGENTS.md)**
+Automated commands that must exit 0. Run them. Record output.
+This is hard evidence — not reasoning.
+
+Evaluate all three layers before forming any verdict. A mandate
+that passes Acceptance Criteria but fails Completion Gate is FAIL.
+A mandate that passes Completion Gate but misses an Acceptance
+Criterion is FAIL.
+
+---
+
 ## Verification Protocol
 
 ### Phase 1 — TIR Completeness Check
@@ -254,6 +279,29 @@ Append to DIP `## QA Verdict` section:
 5. **Framework Observation:** gap or "no gaps identified this session"
 6. **Verdict Rationale:** 1–3 sentences
 
+### Per-Criterion Verdict Table
+
+Every criterion from every Rubric layer gets a row.
+This is the primary QA output. The overall verdict derives
+from it — never declared independently.
+
+| # | Criterion | Source | Verdict | Evidence |
+| --- | --- | --- | --- | --- |
+| 1 | {criterion text} | Acceptance Criteria | PASS | {evidence} |
+| 2 | {criterion text} | Verification Checklist | FAIL | {what failed} |
+| 3 | {criterion text} | Completion Gate | PASS | exit 0, output: {snippet} |
+
+Verdict values:
+  PASS     — criterion satisfied with evidence
+  FAIL     — criterion not satisfied — MUST_FIX
+  PARTIAL  — criterion partially satisfied — SHOULD_FIX
+  BLOCKED  — criterion could not be evaluated (state why)
+
+Overall verdict derivation:
+  PASS              — all criteria PASS
+  CONDITIONAL_PASS  — no FAIL, at least one PARTIAL or BLOCKED
+  FAIL              — any MUST_FIX criterion is FAIL
+
 ### After PASS / CONDITIONAL_PASS
 
 - Set board to `VERIFIED` via the tracker integration
@@ -264,6 +312,24 @@ Append to DIP `## QA Verdict` section:
 - Set board to `NEEDS_REVISION` via the tracker integration
 - Comment on the DMT: "QA verdict: FAIL. [one-line summary of primary failure]."
 - Do not suggest fixes — identify failures precisely, leave solution to Coder
+
+### NEEDS_REVISION Handoff
+
+When issuing FAIL or returning CONDITIONAL_PASS to NEEDS_REVISION,
+QA must produce a targeted handoff — not a generic "fix and resubmit."
+
+For each failing criterion:
+
+  Criterion: {exact criterion text from Rubric}
+  Current state: {what was found}
+  Required to PASS: {exact evidence or action needed}
+  Role: {Coder | SRE | Engineer}
+
+This is the per-criterion feedback that makes the RubricLoop
+informed rather than blind. The downstream role knows exactly
+what to fix and what evidence will satisfy QA on re-evaluation.
+
+Generic NEEDS_REVISION without targeted handoff is a QA defect.
 
 ---
 

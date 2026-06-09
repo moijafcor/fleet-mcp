@@ -546,6 +546,69 @@ concepts:
       - SRE handoff: baseline + rollback + observation window
       - Security non-optional for security-relevant mandates
 
+  harnessable.Rubric:
+    type: concept
+    definition: >
+      The complete set of verifiable criteria that define DONE for
+      a mandate. The same pattern LangChain formalises as
+      RubricMiddleware: define what done looks like upfront,
+      evaluate output against it, feed per-criterion findings back,
+      loop until satisfied. In harnessable the Rubric has three
+      layers and is evaluated by the QA role (the grader).
+    layers:
+      acceptance_criteria:
+        source: DMT
+        owner: Architect
+        definition: >
+          Business-level declaration of what the mandate achieves.
+          Written before implementation begins.
+      verification_checklists:
+        source: DIP
+        owner: Engineer
+        definition: >
+          Implementation-level checks the Coder/SRE must satisfy.
+          [REQUIRED] items are mandatory rubric criteria.
+      completion_gate:
+        source: AGENTS.md
+        owner: project
+        definition: >
+          Automated shell commands that must exit 0.
+          Hard evidence — not model reasoning.
+    evaluated_by: harnessable.QA
+    feedback_mechanism: harnessable.QAVerdict per-criterion table
+    loop_states:
+      satisfied: QA issues PASS — mandate advances to DONE
+      partial: QA issues CONDITIONAL_PASS — Architect accepts or
+               returns to NEEDS_REVISION
+      failed: QA issues FAIL — MUST_FIX items present —
+              mandate returns to NEEDS_REVISION
+      escalated: loop exhausted — Architect decides
+    analogous_to: LangChain RubricMiddleware
+    note: >
+      harnessable arrived at this pattern independently from
+      institutional project governance. LangChain arrived at it
+      from automated agent evaluation. The structural identity
+      validates both designs.
+
+  harnessable.RubricLoop:
+    type: concept
+    definition: >
+      The evaluation and correction cycle driven by the Rubric.
+      Engineer → Coder/SRE → QA → [NEEDS_REVISION → repeat].
+      Terminates on QA PASS or Architect escalation. Human-gated
+      by design: high-stakes production work should not loop
+      autonomously. The board state machine enforces the loop.
+    loop_sequence:
+      - Engineer authors DIP (Rubric declared)
+      - Coder/SRE implements
+      - QA evaluates per criterion
+      - PASS → DONE
+      - CONDITIONAL_PASS → Architect accepts or NEEDS_REVISION
+      - FAIL → NEEDS_REVISION → Engineer → Coder/SRE → QA
+    differs_from_automated_rubric: >
+      Human approves each loop iteration via board state.
+      No max_iterations cap — Architect decides when to escalate.
+
   harnessable.RoleScope:
     type: concept
     definition: >
@@ -831,6 +894,20 @@ concepts:
           One or more required checks failed, or DMT acceptance criteria not
           met, or TIR evidence insufficient for verification.
         triggers_status: harnessable.BoardStatus.NEEDS_REVISION
+    per_criterion_table:
+      required: true
+      format: >
+        | # | Criterion | Source | Verdict | Evidence |
+        Each row maps one Rubric criterion to a verdict.
+        Source: Acceptance Criteria | Verification Checklist |
+                Completion Gate
+        Verdict: PASS | FAIL | PARTIAL | BLOCKED
+        Evidence: exact command output, commit ref, or
+                  statement of what is needed to flip to PASS
+    overall_verdict_derivation: >
+      PASS: all criteria PASS
+      CONDITIONAL_PASS: no FAIL, at least one SHOULD_FIX
+      FAIL: any MUST_FIX criterion is FAIL or PARTIAL
 
   harnessable.SRR:
     type: harnessable.Artifact

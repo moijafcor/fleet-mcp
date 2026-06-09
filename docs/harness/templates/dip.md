@@ -216,6 +216,11 @@ Do not leave this section blank.
 
 ## Verification Checklists
 
+*These checklists are Layer 2 of the Rubric — evaluated by QA*
+*alongside DMT Acceptance Criteria (Layer 1) and the Completion*
+*Gate (Layer 3). Every [REQUIRED] item is a mandatory Rubric*
+*criterion. QA re-executes each independently.*
+
 *Coder or SRE must satisfy all REQUIRED items before advancing to IN_REVIEW.*
 *QA uses these as the primary test matrix.*
 
@@ -399,30 +404,32 @@ observed" if the window was clean.]
 
 ## QA Verdict
 
-*QA fills this section after reviewing TIR or SIR and re-executing checks.*
+*QA fills this section. Do not pre-populate.*
+*Evaluate all three Rubric layers before declaring any verdict.*
 
 **Verdict:** [PASS | CONDITIONAL_PASS | FAIL]
-**QA Agent:** [identifier]
-**Date:** [ISO date]
+**QA Agent:** —
+**Date:** —
 
-### Checks Executed
+### Per-Criterion Verdict
 
-| Check | Result | Evidence |
-| --- | --- | --- |
-| [check description] | PASS / FAIL | [log line, output, observation] |
+| # | Criterion | Source | Verdict | Evidence |
+| --- | --- | --- | --- | --- |
+| — | — | — | — | — |
 
-### Findings
+### Overall Assessment
 
-- [PASS items need no entry]
-- [FAIL/CONDITIONAL: specific description with evidence]
+[2–3 sentences summarising what passed, what failed, and why.]
 
-### Out-of-Scope Findings
+### NEEDS_REVISION Handoff
 
-- [any defects found outside mandate scope — linked to child tasks]
+*Complete only when verdict is FAIL or CONDITIONAL_PASS returning
+to NEEDS_REVISION. One block per failing criterion.*
 
-### Verdict Rationale
-
-[1–3 sentences explaining the verdict, especially for CONDITIONAL_PASS or FAIL]
+Criterion:       —
+Current state:   —
+Required to PASS: —
+Role:            —
 
 ---
 

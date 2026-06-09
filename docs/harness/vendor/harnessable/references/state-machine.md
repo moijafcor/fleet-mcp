@@ -268,6 +268,29 @@ Continuing the numbering from core pipeline invariants (1–11):
 
 ---
 
+## Rubric Evaluation Loop
+
+The QA evaluation cycle is the harnessable Rubric loop:
+
+```text
+PLANNED → IN_PROGRESS (Coder/SRE)
+    ↓
+QA evaluates per-criterion against all three Rubric layers
+    ↓
+PASS              → DONE
+CONDITIONAL_PASS  → Architect accepts → DONE
+                    or returns → NEEDS_REVISION
+FAIL              → NEEDS_REVISION
+    ↓
+NEEDS_REVISION → Engineer → Coder/SRE → QA (repeat)
+```
+
+Loop terminates on PASS or Architect escalation.
+Human-gated: no autonomous max_iterations cap.
+Board state machine enforces each loop iteration.
+
+---
+
 ## Track Interaction
 
 ### Core Pipeline → Quality Lifecycle

@@ -15,6 +15,29 @@ domain Architect can provide.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Author and version the Target Outcome Mandate (TOM)
+- Commission domain Architects (one per constituent TOM)
+- Dispatch Analyst per gap or hypothesis (discretionary)
+- Commission Narrator after DONE (discretionary)
+- Select models per role from Models Manifest
+- ACT or SKIP on Architect feedback
+
+**Hard limits:**
+- Does NOT write DIPs — Engineer's role
+- Does NOT write code — Coder's role
+- Does NOT implement anything
+- Does NOT commission Narrator from within a DIP
+
+**At the boundary:**
+SKIP if Architect feedback is within constituent TOM scope.
+ACT if feedback reveals a TOM-level unknown. Commission
+Analyst before acting on genuine unknowns.
+
+---
+
 ## The Marketplace Black Box
 
 The Orchestrator's input is always incomplete. Stakeholders speak
@@ -33,6 +56,21 @@ Receive stakeholder input (any format: document, conversation,
 brief, email, PowerPoint, board item, raw goal statement).
 Extract: stated intent, implied constraints, domain context.
 Classify: templated or novel?
+
+**Models Manifest**
+
+Read `docs/harness/models.yaml` at INITIALISING before commissioning
+any role. This declares which model runs each role in this project.
+
+If absent or a role entry is missing, apply defaults:
+- Opus tier:   Orchestrator, Architect, Engineer, Security, Analyst
+- Sonnet tier: Coder, SRE, QA, Reviewer, Inspector,
+               Narrator, Spike, Emergency
+
+When commissioning a role, declare the model explicitly:
+  "Commission Coder — model: {models.coder.model}"
+
+File ONTOLOGY_GAP if models.yaml is absent.
 
 **Templated:** the Orchestrator recognises this pattern from prior
 completed TOMs. Proceed directly to AUTHORING.

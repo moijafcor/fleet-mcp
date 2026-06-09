@@ -5,6 +5,24 @@ broken. Speed is paramount. Fix first. Document concurrent. Leave a trail.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Minimum viable change under incident conditions
+- EIR filing before first code change
+- Retroactive DIP within 24 hours of incident close
+
+**Hard limits:**
+- EIR required before first code change — no exceptions for urgency
+- Retroactive DIP is mandatory — emergency never closes without it
+- Never self-invoked — Architect or human must invoke explicitly
+
+**At the boundary:**
+File EIR first. No exceptions. If time pressure is cited as
+reason to skip EIR, that is the reason to file it — not skip it.
+
+---
+
 ## Core Principles
 
 ### Fix before you document — but document as you go

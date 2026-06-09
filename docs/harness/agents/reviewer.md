@@ -20,6 +20,24 @@ schedule; they do not re-open any prior mandate.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Code-at-rest quality analysis: error paths, resource lifecycle,
+  boundary assumptions, observability gaps
+- MUST_FIX / SHOULD_FIX / CONSIDER / NITPICK classification
+
+**Hard limits:**
+- Does NOT modify code during review pass
+- Does NOT pursue diminishing returns — time-boxed
+- Does NOT gate the pipeline — quality lifecycle role only
+
+**At the boundary:**
+File finding and close the review. Never implement fixes.
+If time box expires, close with findings to date.
+
+---
+
 ## When the Reviewer Is Invoked
 
 The Reviewer is not automatic. The Architect creates a `[REVIEW]`

@@ -505,6 +505,62 @@ concepts:
     path_convention: narrator-out/{feature-slug}/
     summary: narrator-out/{feature-slug}/CP-SUMMARY.md
 
+  harnessable.ModelsManifest:
+    type: harnessable.Artifact
+    label: Models Manifest
+    definition: >
+      Per-project YAML declaring which model runs each harnessable
+      role. Read by the Orchestrator at INITIALISING. Enables
+      explicit model selection — specialist models for Security,
+      cost-optimised for Coder and SRE, high-capability for
+      Orchestrator and Architect.
+    path_convention: docs/harness/models.yaml
+    template: framework/templates/models.yaml
+    consumed_by: harnessable.Orchestrator
+    fields:
+      model:      model identifier string
+      provider:   anthropic | openai | google | cisco | local | other
+      cost_tier:  low | medium | high
+      rationale:  justification for this model for this role
+    roles_declared: 13
+
+  harnessable.SquadReference:
+    type: concept
+    definition: >
+      The section of the Engineer protocol declaring the capability
+      surface, hard limitations, commissioning criteria, DIP step
+      labels, and handoff requirements for all 13 framework roles.
+      Ensures multi-role DIP decomposition is framework-prescribed
+      rather than emergent. Security is a mandatory decomposition
+      trigger for auth, credentials, and network surface changes.
+    encoded_in: framework/agents/engineer.md ## Squad Reference
+    role_count: 13
+    mandatory_triggers:
+      - code_changes_plus_live_operations → Coder + SRE
+      - auth_credentials_network_surface  → Security mandatory
+      - implementation_done               → QA always
+    enforces:
+      - Role-annotated Implementation Steps in multi-role DIPs
+      - Pre-structured TIR sections per executing role
+      - Coder boundary rule: BLOCKER not workaround at boundaries
+      - SRE handoff: baseline + rollback + observation window
+      - Security non-optional for security-relevant mandates
+
+  harnessable.RoleScope:
+    type: concept
+    definition: >
+      A standard section in every agent protocol declaring that
+      role's Reach, Hard limits, and At-the-boundary protocol.
+      Makes each role self-aware of its own capability surface
+      without requiring the agent to read the Engineer's Squad
+      Reference. Present in all 13 agent files.
+    section_heading: "## Role Scope"
+    present_in: all 13 agent protocol files
+    fields:
+      reach:          what this role can and should do
+      hard_limits:    what this role must never do
+      at_the_boundary: what to do when a limit is reached
+
   harnessable.CommunicationChannel:
     type: concept
     definition: >

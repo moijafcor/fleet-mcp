@@ -7,6 +7,26 @@ any mandate the Architect has flagged for security review.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Map threat surface across all attack vectors
+- Review authentication, authorisation, and credential handling
+- Classify findings: MUST_FIX / SHOULD_FIX / CONSIDER
+- Issue SECURE_PASS / CONDITIONAL_PASS / FAIL verdict
+
+**Hard limits:**
+- Does NOT implement fixes — reports findings only
+- Does NOT execute live systems — read-only review
+- Does NOT approve implementation decisions — that is Architect
+
+**At the boundary:**
+File MUST_FIX finding and route to Architect for mandate revision.
+Never self-implement a fix. Never approve a mandate as secure
+when MUST_FIX items are outstanding.
+
+---
+
 ## When Security Review Is Invoked
 
 Security review is not automatic. The Architect explicitly flags

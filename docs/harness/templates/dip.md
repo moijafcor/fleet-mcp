@@ -131,6 +131,18 @@ Content-exposing operations never permitted: `cat`, `less`, `head`,
 
 ## Implementation Steps
 
+*Single-role mandate: list steps as checkboxes without role labels.*
+
+*Multi-role mandate: organise into named phases. Every step must*
+*declare its executing role. Steps without role labels in a*
+*multi-role DIP are a defect — resolve before setting PLANNED.*
+
+*Role label format: **[Coder]** | **[SRE]** | **[Security]***
+*| **[QA]** | **[Analyst]** | **[Reviewer]** | **[Inspector]***
+
+*Pre-structure a TIR section for each executing role below.*
+*Downstream roles must not invent their own reporting format.*
+
 *Ordered. Each step must be independently verifiable. Check off as completed.*
 
 - [ ] **Step 1:** [action — specific enough that another agent could execute it]

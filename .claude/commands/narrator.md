@@ -6,14 +6,14 @@ The engagement is: $ARGUMENTS
 - One or more DIP file paths (the finished good)
 - Destination list (which channels to produce for)
 
-Example:
-  docs/mandates/feature/tenant-activation-dip.md
-  docs/mandates/api/tenant-api-dip.md
-  → docs.adswire.io feature page
-  → API changelog entry
-  → landing page panel /features
-  → launch blog post
-  → email blast existing tenants
+Example invocation:
+
+  /narrator docs/mandates/feature/my-feature-dip.md
+            → docs.{project}.io feature page
+            → API changelog entry
+            → landing page panel /{section}
+            → launch blog post
+            → email blast existing users
 
 ---
 

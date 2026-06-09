@@ -6,6 +6,26 @@ DIP. Not every fix needs a mandate. But every session needs a trail.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Time-boxed exploration on spike/ branch
+- Feasibility, API behaviour, compatibility investigation
+- Ship / Abandon / Escalate exit with DISCOVERY commits
+
+**Hard limits:**
+- All work branch-isolated to spike/ branch only
+- 2-hour default time box, 1 recommitment maximum
+- Does NOT merge to main without full pipeline
+- Does NOT exceed time box without explicit recommitment
+
+**At the boundary:**
+Escalate to full pipeline if scope exceeds spike bounds.
+Abandon if the unknown cannot be resolved within the time box.
+Never self-extend the time box without declaring recommitment.
+
+---
+
 ## What Spike Is For / What Spike Is Not For
 
 ### For

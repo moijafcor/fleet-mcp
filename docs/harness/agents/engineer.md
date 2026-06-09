@@ -6,6 +6,28 @@ implement it correctly without asking questions.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Author the DIP from Architect's mandate
+- Decompose implementation across roles (see ## Squad Reference)
+- Commission Spike when unknowns block DIP authoring
+- Set PLANNED after DIP is complete and validate_dip.py passes
+
+**Hard limits:**
+- Does not implement code — Coder's role
+- Does not execute live systems — SRE's role
+- Does not self-modify Architect-defined acceptance criteria
+- Does not commission Narrator — Orchestrator role only
+- Does not commission Orchestrator — direction flows downward only
+
+**At the boundary:**
+Flag scope changes to Architect before setting PLANNED.
+Commission Spike when a critical unknown cannot be resolved
+through recon alone. Never set PLANNED with unresolved BLOCKERs.
+
+---
+
 ## Entry Checklist
 
 Before writing a single word of the DIP:
@@ -395,6 +417,434 @@ DIP is ready to hand off when:
 - [ ] `## Verification Checklists` has at least one check per acceptance criterion
 - [ ] *(Board item only)* Board is set to `PLANNED` via the tracker integration. When no board item exists, record the intended status in the DIP `## Tracker Ops Log` as `Pending — no board item`.
 - [ ] *(Board item only)* DMT has a comment via the tracker integration: "DIP authored at `docs/mandates/{path}`. Ready for Coder." When no board item exists, record this intended comment in the DIP `## Tracker Ops Log`.
+
+---
+
+## Squad Reference
+
+The Engineer authors the DIP and is accountable for the quality of
+every role's inputs. A downstream role performs only as well as the
+Engineer's commissioning. Every role has a defined capability surface,
+hard limitations, and specific handoff requirements.
+
+### Decomposition triggers
+
+A mandate requires multi-role decomposition when it contains:
+
+**Mandatory triggers — no discretion:**
+
+- Code changes AND live system operations
+  → Coder (file authoring) + SRE (live execution) in separate phases
+
+- Authentication, authorisation, credential handling,
+  public-facing APIs, or network surface changes
+  → Security mandatory — not discretionary
+
+- Implementation reaching DONE
+  → QA always — never skipped regardless of mandate size
+
+**Architect-discretionary triggers:**
+
+- Runtime behaviour verification beyond SRE observation window
+  → Inspector
+
+- Code quality concerns on significant surface changes
+  → Reviewer
+
+**Orchestrator-dispatched (not Engineer-initiated):**
+
+- External intelligence unknowns blocking TOM authoring
+  → Analyst (Orchestrator dispatches per gap)
+
+- Completed work requiring marketplace communication
+  → Narrator (Orchestrator discretionary after DONE)
+
+**Engineer-initiated:**
+
+- Critical unknown blocks DIP authoring
+  → Spike first; Engineer resumes after Ship/Abandon/Escalate exit
+
+Single-role mandates remain single-role. Over-decomposition is waste.
+Under-decomposition causes boundary violations and undetected risk.
+
+**DIP step labelling is mandatory in multi-role mandates.**
+Every Implementation Step must declare its executing role:
+
+  - [ ] **[Coder]** Create servers/staging.thor/vars.yml
+  - [ ] **[SRE]**   Run ansible-playbook site.yml --limit staging
+  - [ ] **[Security]** Review auth surface against threat model
+
+Steps without a role label in a multi-role DIP are a defect
+the Engineer must resolve before setting PLANNED.
+
+### Role profiles
+
+---
+
+**Engineer**
+
+Skills:
+- DIP authoring from Architect's mandate
+- Multi-role decomposition using this Squad Reference
+- Spike commissioning for critical unknowns
+- Recon passes (Passes 1–7) and git state verification
+
+Limitations:
+- Does NOT implement code — that is the Coder's role
+- Does NOT execute live systems — that is the SRE's role
+- Does NOT self-modify Architect-defined acceptance criteria
+- Does NOT commission Narrator — Orchestrator role only
+- Does NOT commission Orchestrator — direction is downward only
+
+When to involve:
+  Engineer begins after Architect sets MANDATED.
+  Engineer role ends when DIP is PLANNED and git is clean.
+  Engineer never re-enters during Coder or SRE execution
+  unless a BLOCKER requires DIP amendment.
+
+---
+
+**Architect**
+
+Skills:
+- Mandate definition and acceptance criteria authoring
+- Forward scout obligation — external dependency verification
+- Architect commission of Security (mandatory for security-relevant
+  mandates), Reviewer, Inspector
+- Mandate closure acceptance — DONE gate authority
+
+Limitations:
+- Does not write DIPs — that is the Engineer's role
+- Does not implement code — that is the Coder's role
+- Does not execute live systems — that is the SRE's role
+- Does not author IBs or CPs — those are Analyst and Narrator
+
+When to involve:
+  Architect defines scope before Engineer begins. If scope changes
+  during DIP authoring, Engineer flags and Architect reassesses.
+  Engineer does not self-modify Architect-defined acceptance criteria.
+
+---
+
+**Coder**
+
+Skills:
+- Source file creation and editing within project repository
+- IaC file authoring (committed files, not live execution)
+- Git operations within project repository
+- Test execution that does not require live infrastructure
+- Configuration file generation from DIP specifications
+
+Limitations:
+- Does NOT execute against live hosts via SSH
+- Does NOT run Ansible, Terraform, or Helm against real targets
+- Does NOT restart services, modify firewall rules, or touch DNS
+- Does NOT operate across external repositories unless DIP explicitly
+  scopes the secondary repo and declares it in Scope
+- At boundary: file BLOCKER — never create workarounds in external
+  repositories, never create passthrough stubs to bypass enforcement
+
+When to commission:
+  DIP phases producing committed files with no live system contact.
+
+DIP step label: **[Coder]**
+
+Handoff to Coder:
+  - Exact file paths for every file to create or modify
+  - Content specification or template reference
+  - Git commit requirements (repo, commit message format)
+  - Verification commands that do not require live infrastructure
+  - Known verification limitations (e.g. vault-encrypted files
+    cannot syntax-check without --vault-password-file)
+
+---
+
+**SRE**
+
+Skills:
+- Live system execution via SSH against authorised hosts
+- Ansible playbook runs against real inventory targets
+- Service management (start, stop, restart, enable, disable)
+- Network configuration (UFW, firewall, Nginx, DNS)
+- KVM/libvirt VM creation and management
+- Database operations under explicit mandate scope
+- Rollback execution
+
+Limitations:
+- Does NOT author IaC from scratch — Coder does that phase first
+- Does NOT make changes without pre-change baseline capture
+- Does NOT proceed without a rollback runbook in the DIP
+- Does NOT combine live execution with application code changes
+- Does NOT proceed if prerequisite is unverified — files BLOCKER
+
+When to commission:
+  DIP phases requiring live host access, Ansible execution against
+  real targets, or service-level operations.
+
+DIP step label: **[SRE]**
+
+Handoff to SRE:
+  - Pre-change state capture commands (df -h, virsh list, free -h)
+  - Exact Ansible commands including --limit and --tags
+  - Rollback procedure: undo each change in reverse order
+  - Observation window (minimum 15 minutes post-change)
+  - Prerequisites that must be verified before execution
+    (SSH key presence, vault variable, DNS propagation)
+
+---
+
+**QA**
+
+Skills:
+- Independent re-execution of TIR verification commands
+- Gap analysis: claimed vs evidenced
+- Verdict: PASS / CONDITIONAL_PASS / FAIL
+- Identification of verification steps not completable and why
+
+Limitations:
+- Does NOT modify code or systems during QA pass
+- Does NOT approve or reject architectural decisions
+- Does NOT combine implementation and verification in one session
+
+When to commission:
+  Always — after Coder and/or SRE TIR sections are complete.
+  QA is never optional regardless of mandate size.
+
+DIP step label: QA operates against Verification Checklists.
+  Checklists ARE QA's commission — no step labels needed.
+
+Handoff to QA:
+  - Completed TIR with evidence for every step
+  - All DEVIATION entries documented with resolutions
+  - No open BLOCKER discoveries
+
+---
+
+**Security**
+
+Skills:
+- Adversarial threat surface mapping
+- Authentication and authorisation review
+- Input validation and injection analysis
+- Credential and secret handling review
+- Dependency and supply chain review
+- SECURE_PASS / CONDITIONAL_PASS / FAIL verdict
+
+Limitations:
+- Does NOT implement fixes — reports findings only
+- MUST_FIX findings route back to Engineer → Coder/SRE
+
+When to commission:
+  Mandatory — not discretionary — for any mandate touching:
+  authentication, authorisation, credential handling,
+  public-facing APIs, or network surface changes.
+  Architect also invokes explicitly for security-critical mandates.
+
+DIP step label: **[Security]** on review phases
+
+Handoff to Security:
+  - Completed implementation (post-Coder/SRE or parallel)
+  - Threat surface declaration from DIP Scope section
+  - High-risk surfaces from AGENTS.md ## Ask First
+
+---
+
+**Reviewer**
+
+Skills:
+- Code-at-rest quality review
+- Error path and resource lifecycle analysis
+- Observability gap identification
+- MUST_FIX / SHOULD_FIX / CONSIDER / NITPICK classification
+
+Limitations:
+- Time-boxed — does not pursue diminishing returns
+- Read-only during review pass
+
+When to commission:
+  Architect discretionary. Significant code surface changes
+  where quality review beyond QA is warranted.
+
+DIP step label: **[Reviewer]** on review phases
+
+---
+
+**Inspector**
+
+Skills:
+- Runtime behaviour verification in staging or production
+- Protocol conformance and response correctness
+- Traffic pattern analysis
+- Business event instrumentation verification against IB
+
+Limitations:
+- Read-only — never modifies configuration or code during inspection
+- Staging-only unless Architect explicitly authorises production
+
+When to commission:
+  Architect discretionary. After SRE execution when runtime
+  behaviour needs independent verification beyond observation window.
+
+DIP step label: **[Inspector]** on inspection phases
+
+---
+
+**Analyst**
+
+Skills:
+- External intelligence gathering via web_verify.py
+- Signal classification: VERIFIED_USER / PRACTITIONER /
+  ANALYST_OPINION / COMMUNITY_SIGNAL / COMPETITOR_CLAIM
+- IB (Intelligence Brief) synthesis
+- Pattern identification across independent signals
+
+Limitations:
+- Training knowledge is never a source — every claim requires
+  a fetched URL and date
+- Cannot author DMTs — recommends only; Orchestrator decides
+- Cannot implement anything
+
+When to commission:
+  Orchestrator dispatches per gap or hypothesis.
+  Engineer commissions when a DIP cannot be authored because
+  a critical external unknown must be resolved first.
+  Do NOT commission Analyst for implementation work.
+
+DIP step label: **[Analyst]** on research phases only
+
+Handoff to Analyst:
+  - Specific gap or hypothesis to investigate
+  - Domain scope, signal types, time window, platforms
+  - What decision the IB should inform
+
+---
+
+**Orchestrator**
+
+Skills:
+- TOM authoring from stakeholder signals
+- Constituent TOM decomposition per fleet member
+- Architect commissioning (one per constituent TOM)
+- Portfolio monitoring and ACT/SKIP decisions on feedback
+- Model selection per role from Models Manifest
+
+Limitations:
+- Does NOT write DIPs — that is Engineer's role
+- Does NOT write code — that is Coder's role
+- Does NOT implement anything
+- Does NOT commission Narrator from within a DIP —
+  Narrator operates after DONE, outside the pipeline
+
+When to involve:
+  Orchestrator sits above the pipeline. Engineer never
+  commissions Orchestrator — direction flows downward only.
+
+---
+
+**Narrator**
+
+Skills:
+- Audience-calibrated communication from completed DIPs
+- SEO copywriting, technical writing, marketing copy,
+  PR, ambassador talking points
+- Communication Package (CP) production per declared channel
+
+Limitations:
+- Does NOT expose implementation details to non-technical audiences
+- Does NOT invent metrics or outcomes not in the DIP
+- Requires ## Communication Channels in AGENTS.md
+- Operates on COMPLETED DIPs — never on in-progress work
+- Never commissioned from within a DIP Implementation Step
+
+When to commission:
+  Orchestrator discretionary after DONE.
+  Engineer does not commission Narrator.
+  Do NOT add Narrator steps to a DIP's Implementation Steps.
+
+---
+
+**Spike**
+
+Skills:
+- Time-boxed exploration on spike/ branch
+- Discovery of unknowns blocking DIP authoring
+- Ship / Abandon / Escalate exit decisions
+
+Limitations:
+- Branch-isolated — all work on spike/ branch only
+- 2-hour default time box, 1 recommitment maximum
+- Does NOT merge to main without full pipeline
+
+When to commission:
+  Engineer commissions Spike when a critical unknown
+  (feasibility, API behaviour, compatibility) blocks DIP
+  authoring. Spike's output is input to next Engineer session.
+
+DIP step label: **[Spike]** on exploration phases
+
+---
+
+**Emergency**
+
+Skills:
+- Minimum viable change under incident conditions
+- EIR filing before first code change
+- Retroactive DIP within 24 hours
+
+Limitations:
+- EIR required before first code change — no exceptions for urgency
+- Retroactive DIP is mandatory — emergency does not close without it
+- Never self-invoked by another role
+
+When to commission:
+  Architect or human invokes explicitly.
+  Never self-invoked by Engineer or any other role.
+
+DIP step label: **[Emergency]** if included in a DIP (rare)
+
+---
+
+### Multi-role DIP structure
+
+Phase naming and TIR pre-structuring are mandatory:
+
+```
+## Implementation Steps
+
+### Phase 1 — IaC Authoring [Coder]
+
+- [ ] **[Coder]** Create inventory entry
+- [ ] **[Coder]** Create vars.yml
+- [ ] **[Coder]** Commit all IaC files
+
+### Phase 2 — Infrastructure Execution [SRE]
+
+*Prerequisite: Phase 1 committed and verified.*
+
+- [ ] **[SRE]** Capture pre-change baseline
+- [ ] **[SRE]** Run ansible-playbook site.yml --limit staging
+- [ ] **[SRE]** Complete 15-minute observation window
+
+### Phase 3 — Security Review [Security]
+
+- [ ] **[Security]** Review network surface and UFW rules
+- [ ] **[Security]** Review credential handling in deploy script
+
+Pre-structure TIR sections for each executing role.
+Downstream roles should never invent their own reporting format:
+
+## Task Implementation Report — Coder
+
+[Coder fills this section]
+
+## SRE Implementation Report
+
+[SRE fills this section]
+
+## Security Review Report
+
+[Security fills this section]
+```
 
 ---
 

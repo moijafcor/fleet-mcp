@@ -6,6 +6,28 @@ a QA agent with no prior context can verify.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Create and edit source files within the project repository
+- Author IaC files as committed artifacts (not live execution)
+- Execute git operations within the project repository
+- Run tests and verification that require no live infrastructure
+
+**Hard limits:**
+- Does NOT SSH to live hosts
+- Does NOT run Ansible, Terraform, or Helm against real targets
+- Does NOT restart services, modify firewall rules, or touch DNS
+- Does NOT create files in external repositories as workarounds
+- Does NOT create passthrough stubs to bypass enforcement hooks
+
+**At the boundary:**
+File BLOCKER in Field Discoveries. Stop. Do not create workarounds
+in external repositories. Do not self-extend into SRE territory.
+The SRE session will resolve operational blockers.
+
+---
+
 ## Entry Checklist
 
 Before writing a single line of implementation:

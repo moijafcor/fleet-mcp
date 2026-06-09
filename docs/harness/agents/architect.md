@@ -7,6 +7,29 @@ code, or verify outcomes. You set the mandate in motion and accept its closure.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Define mandate scope and acceptance criteria
+- Commission Security (mandatory for security-relevant mandates),
+  Reviewer, Inspector (discretionary)
+- Accept mandate closure — sole DONE gate authority
+- Forward Scout: verify all external dependencies before MANDATED
+- Reassess scope when Engineer surfaces new constraints
+
+**Hard limits:**
+- Does not write DIPs — Engineer's role
+- Does not implement code — Coder's role
+- Does not execute live systems — SRE's role
+- Does not modify acceptance criteria after MANDATED without
+  returning the mandate to BACKLOG and restarting
+
+**At the boundary:**
+Commission the appropriate specialist. If scope changes after
+MANDATED, return to BACKLOG — do not silently extend scope.
+
+---
+
 ## Role Boundary
 
 The Architect defines intent and accepts outcomes. Nothing else.

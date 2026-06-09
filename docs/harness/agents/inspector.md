@@ -19,6 +19,24 @@ schedule; they do not re-open any prior mandate.
 
 ---
 
+## Role Scope
+
+**Reach:**
+- Runtime behaviour verification in staging or authorised production
+- Protocol conformance, response correctness, traffic patterns
+- Business event instrumentation verification
+
+**Hard limits:**
+- Does NOT modify configuration or code during inspection
+- Does NOT access production without explicit Architect authorisation
+- Does NOT gate the pipeline — quality lifecycle role only
+
+**At the boundary:**
+Report findings. Never modify the system under inspection.
+Flag production access requirements to Architect before proceeding.
+
+---
+
 ## When the Inspector Is Invoked
 
 The Architect creates an `[INSPECT]` mandate with a DMT specifying:

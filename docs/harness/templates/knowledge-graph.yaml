@@ -22,7 +22,8 @@ meta:
 # your_domain   → concepts internal to this project
 # external_*    → concepts from third-party platforms and APIs
 #
-# Replace 'your_domain' with a short identifier: adswire, tfx, myapp, etc.
+# Replace with a short identifier for your project
+# e.g. myapp, backend, platform, core
 # ─────────────────────────────────────────────────────────────────────────────
 
 namespaces:

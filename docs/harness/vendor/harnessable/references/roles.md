@@ -62,6 +62,14 @@ See `agents/engineer.md` for the full recon protocol. Minimum recon:
 - Check infrastructure or operational state if relevant
 - Identify all external dependencies (APIs, services, integrations, stakeholders)
 
+**Multi-role decomposition:**
+When implementation spans role boundaries, the DIP must organise steps into
+named phases and label every step with its executing role. See
+`agents/engineer.md ## Squad Reference` for the full 13-role profile table,
+mandatory decomposition triggers (code + live ops → Coder + SRE; auth/
+credentials/network → Security; DONE → QA always), and DIP phase structure.
+A step without a role label in a multi-role DIP is a protocol defect.
+
 **Permissions:**
 
 - Author and update DIP

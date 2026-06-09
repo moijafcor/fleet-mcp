@@ -1,0 +1,110 @@
+# docs/harness/models.yaml
+#
+# Models Manifest — declares which model runs each role.
+# Read by the Orchestrator at INITIALISING before commissioning.
+# Update when model access changes or cost/capability tradeoffs shift.
+#
+# cost_tier: low | medium | high
+# provider:  anthropic | openai | google | cisco | local | other
+
+roles:
+
+  orchestrator:
+    model:      # REPLACE: claude-opus-4-8 | claude-opus-4-7
+    provider:   anthropic
+    cost_tier:  high
+    rationale: >
+      Complex multi-mandate planning, TOM authoring, cross-domain
+      synthesis. Highest reasoning requirement in the framework.
+
+  architect:
+    model:      # REPLACE: claude-opus-4-7 | claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  high
+    rationale: >
+      Mandate definition, acceptance criteria, forward scout.
+      Benefits from extended reasoning capability.
+
+  engineer:
+    model:      # REPLACE: claude-opus-4-7 | claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  high
+    rationale: >
+      Squad coordination, multi-role DIP decomposition.
+      Requires breadth across all 13 role profiles.
+
+  coder:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      File creation, IaC authoring, git operations.
+      Well-defined tasks with explicit specifications.
+
+  sre:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Operational execution, Ansible, service management.
+      Precision over reasoning depth.
+
+  qa:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Verification and gap analysis against TIR evidence.
+
+  security:
+    model:      # REPLACE: claude-opus-4-7 | cisco-security
+    provider:   # REPLACE: anthropic | cisco | other
+    cost_tier:  high
+    rationale: >
+      Adversarial reasoning, threat surface analysis.
+      Domain specialist models preferred where available.
+
+  reviewer:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Code quality review. Time-boxed. Pattern matching.
+
+  inspector:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Runtime verification. Observation and reporting.
+
+  analyst:
+    model:      # REPLACE: claude-opus-4-7 | claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Intelligence synthesis and web research. Benefits from
+      extended context for multi-source synthesis.
+
+  narrator:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  low
+    rationale: >
+      Content generation with well-defined output formats.
+      Fast and cost-efficient.
+
+  spike:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Time-boxed exploration. Speed over depth.
+
+  emergency:
+    model:      # REPLACE: claude-sonnet-4-6
+    provider:   anthropic
+    cost_tier:  medium
+    rationale: >
+      Minimum viable change under incident conditions.
+      Speed critical.

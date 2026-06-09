@@ -20,14 +20,15 @@ Handover document sections:
   - Last known board status
   - Unresolved checklist items from TIR sign-off
 
-Configuration (.harness/config.json, optional):
+Configuration:
+  .harness/config.json (codebase_paths — git repos to snapshot):
   {
-    "codebase_paths": [
-      ".",
-      "../app.adswire.io",
-      "../api.adswire.io",
-      "../console.adswire.io"
-    ]
+    "codebase_paths": [".", "../sibling-repo"]
+  }
+
+  .harnessable/config.json (sibling_projects — additional repos):
+  {
+    "sibling_projects": ["../my-other-repo", "../another-repo"]
   }
 
 If no config exists, only the current working directory is checked for git.
@@ -85,6 +86,31 @@ def load_config(harnessable_dir: Path) -> dict:
         except Exception:
             pass
     return DEFAULT_CONFIG
+
+
+def get_sibling_projects() -> list[str]:
+    """
+    Return sibling project paths for snapshot inclusion.
+    Configured in .harnessable/config.json under
+    'sibling_projects'. Falls back to empty list if absent
+    or unconfigured.
+
+    To configure, add to .harnessable/config.json:
+      {
+        "sibling_projects": [
+          "../my-other-repo",
+          "../another-repo"
+        ]
+      }
+    """
+    config_file = Path(".harnessable/config.json")
+    if not config_file.exists():
+        return []
+    try:
+        config = json.loads(config_file.read_text())
+        return config.get("sibling_projects", [])
+    except (json.JSONDecodeError, OSError):
+        return []
 
 
 def git_state(path: str) -> dict:
@@ -295,7 +321,7 @@ def main() -> int:
 
     # ── Git state per configured codebase ────────────────────────────────────
 
-    codebase_paths = config.get("codebase_paths", ["."])
+    codebase_paths = config.get("codebase_paths", ["."]) + get_sibling_projects()
     git_results = [git_state(p) for p in codebase_paths]
 
     # ── Build handover document ───────────────────────────────────────────────

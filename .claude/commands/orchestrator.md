@@ -32,8 +32,8 @@ Load project governance from `AGENTS.md`.
    If a matching pattern exists: templated → AUTHORING.
    If genuinely new territory: novel → RESEARCHING.
 
-3. Set board to IN_PROGRESS.
-   # REPLACE: adapt board mutation to your tracker integration
+3. **Case A only:** Set board status to `IN_PROGRESS` via your tracker
+   integration.
 
 4. If templated: state which prior TOM this matches
    and what the pattern is before proceeding.

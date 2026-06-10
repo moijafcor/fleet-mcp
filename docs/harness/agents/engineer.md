@@ -804,6 +804,111 @@ DIP step label: **[Emergency]** if included in a DIP (rare)
 
 ---
 
+**Designer**
+
+Skills:
+- SVG authoring from exact geometric specifications
+- Colour system, typography, and spacing token application
+- CLI export pipelines: cairosvg, ImageMagick,
+  Inkscape, svgo
+- Multi-format asset package production from SVG master
+- Favicon pipeline (16, 32, 48, 180px + ICO)
+- OG image production (1200×630)
+
+Limitations:
+- Never makes aesthetic decisions — spec decides everything
+- Never installs GUI design tools
+- At ambiguity: BLOCKER, not a guess
+- Output is static files — not application code
+- Cannot produce assets without a written specification
+
+When to commission:
+  Any DIP step producing brand assets, icons, favicons,
+  OG images, or visual artifact packages from a
+  written specification.
+
+DIP step label: **[Designer]**
+
+Handoff to Designer:
+  - Complete visual specification (geometry, colours,
+    opacity, typography — all values explicit)
+  - Declared output files with exact dimensions and formats
+  - Size-specific variations documented
+  - Output path declared
+  - CLI tools confirmed available (or AGENTS.md
+    ## Infrastructure declares how to install them)
+
+---
+
+**OPERATOR (Human)**
+
+This is not a role — it is a human. When a step requires human
+action that no agent can perform, the Engineer declares it as
+an [OPERATOR] step in the DIP.
+
+When to use:
+
+- Browser UI verification that requires visual judgement
+- SaaS dashboard interaction with no API equivalent
+- 2FA or physical confirmation steps
+- Any action requiring human presence or credentials
+  outside the agent's reach
+
+DIP step label: **[OPERATOR]**
+
+Engineer responsibilities for OPERATOR steps:
+
+- Write exact instructions the operator must follow
+- Declare precisely what evidence to capture
+- Declare how to signal completion back to the session
+- Declare what to do if the step cannot be completed
+- Never leave an OPERATOR step undeclared in the Rubric —
+  undeclared means invisible to QA
+
+OPERATOR steps in the Rubric:
+  QA cannot re-execute OPERATOR steps independently.
+  QA verifies that human-captured evidence exists and is
+  consistent with the step's pass criteria.
+
+---
+
+**PLAYWRIGHT (Browser Automation)**
+
+Playwright is a browser automation framework executable by
+agents via Bash. It is not a role — it is a tool. When a step
+requires a real browser context, the Engineer declares it as
+a [PLAYWRIGHT] step so it appears in the Rubric and QA can
+verify it.
+
+When to use:
+
+- End-to-end acceptance tests requiring a browser
+- Form submission and redirect verification
+- Authenticated flow testing (login, onboarding, checkout)
+- Visual state verification beyond what curl/grep can capture
+
+DIP step label: **[PLAYWRIGHT]**
+
+Typical split:
+  [Coder] writes the test file
+  [QA] or [Inspector] runs it and captures evidence
+
+Engineer responsibilities for PLAYWRIGHT steps:
+
+- Declare the test file path
+- Declare the exact execution command
+- Declare the pass criteria (what exit 0 proves)
+- Declare the evidence to capture (stdout + screenshot path)
+- Confirm Playwright is available (check AGENTS.md
+  ## Browser Testing section)
+
+PLAYWRIGHT steps in the Rubric:
+  QA re-runs the test independently and captures fresh output.
+  Coder's self-reported "tests passed" is not sufficient —
+  QA must execute and evidence independently.
+
+---
+
 ### Multi-role DIP structure
 
 Phase naming and TIR pre-structuring are mandatory:

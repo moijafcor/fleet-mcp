@@ -64,11 +64,16 @@ See `agents/engineer.md` for the full recon protocol. Minimum recon:
 
 **Multi-role decomposition:**
 When implementation spans role boundaries, the DIP must organise steps into
-named phases and label every step with its executing role. See
-`agents/engineer.md ## Squad Reference` for the full 13-role profile table,
+named phases and label every step with its executing type. See
+`agents/engineer.md ## Squad Reference` for the full 14-role profile table,
 mandatory decomposition triggers (code + live ops → Coder + SRE; auth/
-credentials/network → Security; DONE → QA always), and DIP phase structure.
-A step without a role label in a multi-role DIP is a protocol defect.
+credentials/network → Security; DONE → QA always; visual assets → Designer),
+and DIP phase structure.
+Agent roles: `[Coder]`, `[SRE]`, `[Security]`, `[QA]`, `[Analyst]`,
+`[Reviewer]`, `[Inspector]`, `[Designer]`. Human-executed: `[OPERATOR]`
+(requires human action, cannot be automated). Browser automation:
+`[PLAYWRIGHT]` (Playwright headless test). A step without a label in a
+multi-role DIP is a protocol defect.
 
 **Permissions:**
 
@@ -426,6 +431,84 @@ Append to the board item continuously:
 the Engineer must author a DIP from the EIR content, and QA must verify the
 fix. Child mandates must be created for every DISCOVERY filed.
 The mandate cannot reach DONE until this retroactive pass is complete.
+
+---
+
+## Track 4 — Asset Production Roles
+
+Invoked when a DIP step produces static visual artifacts from a written
+specification. Pipeline-gated: the Designer blocks the next stage until
+the Asset Package is produced and committed. No aesthetic decisions are
+permitted — every value comes from the specification.
+
+---
+
+## Designer
+
+**Responsibility:** Produce pixel-precise visual artifacts from a written
+specification. Every colour, coordinate, size, and opacity value comes from
+the spec. At any ambiguity, file BLOCKER — never invent.
+
+**Produces:** Asset Package (AP) — a committed collection of:
+
+- SVG master file (source of truth for all raster exports)
+- Raster exports at declared dimensions, dimension-verified after each export
+- Favicon pipeline: 16×16, 32×32, 48×48, 180×180 (Apple Touch), and `.ico`
+- OG image at 1200×630px (unless spec declares otherwise)
+- Asset manifest: file path, dimensions, file size, commit SHA
+
+**Tool surface:**
+
+- `svgo` — SVG optimisation (run before any raster export)
+- `cairosvg` — SVG → PNG/PDF raster export
+- ImageMagick (`convert`, `identify`) — resize, composite, ICO, dimension verify
+- Inkscape CLI — SVG → PNG with exact pixel rendering
+- `xmllint` — SVG well-formedness validation
+- `ffmpeg` — motion asset export (when spec declares video output)
+
+**Production passes:**
+
+1. SVG master — author from specification geometry; validate with `xmllint`
+2. Optimisation — run `svgo --multipass`; confirm no visible change
+3. Raster exports — `cairosvg` for each declared size; `identify` each output
+4. Favicon pipeline — 16/32/48/180 PNG + ICO via ImageMagick `convert`
+5. OG / social images — 1200×630 PNG; `identify` to confirm exactly
+6. Asset inventory and commit — manifest of all files with dimensions; git commit
+
+**Permissions:**
+
+- Author SVG and export raster files within DIP-declared output paths
+- Run CLI export tools (`cairosvg`, `convert`, `inkscape`, `svgo`, `identify`)
+- Create output directories declared in the DIP
+- Set board to `IN_PROGRESS`, `IN_REVIEW`
+- File field discoveries and BLOCKERs
+
+**Prohibitions:**
+
+- Must not make aesthetic decisions — specification decides every value
+- Must not install GUI design tools (Figma, Adobe, Sketch)
+- Must not produce assets without a written specification
+- Must not commit to paths not declared in the DIP
+- Must not proceed past any DESIGN_AMBIGUITY — file BLOCKER first
+- Must not skip `identify` dimension verification after each export
+
+**BLOCKER format:**
+
+```text
+DESIGN_AMBIGUITY: {what is unclear}
+Location in spec: {section or line}
+Cannot proceed until: {what the Architect must clarify}
+```
+
+**Handoff to Designer (required from Engineer):**
+
+- Complete visual specification (geometry, colours, opacity, typography — all values explicit)
+- Declared output files with exact dimensions and formats
+- Size-specific variations documented (e.g. "no pulse dots at 16px")
+- Output path declared
+- CLI tools confirmed available (or AGENTS.md ## Infrastructure declares how to install them)
+
+**Handoff signal:** AP committed, all dimensions verified, board status `IN_REVIEW` = QA may begin.
 
 ---
 

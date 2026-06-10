@@ -291,6 +291,35 @@ from it — never declared independently.
 | 2 | {criterion text} | Verification Checklist | FAIL | {what failed} |
 | 3 | {criterion text} | Completion Gate | PASS | exit 0, output: {snippet} |
 
+Source values:
+  Acceptance Criteria    — from DMT (Architect)
+  Verification Checklist — from DIP [REQUIRED] items (Engineer)
+  Completion Gate        — automated shell commands (AGENTS.md)
+  OPERATOR               — human-executed step
+  PLAYWRIGHT             — browser-automated test
+
+Evidence requirements by source:
+
+  Acceptance Criteria / Verification Checklist:
+    Command output, commit reference, or observation confirming
+    the criterion is satisfied.
+
+  Completion Gate:
+    Exit code + stdout snippet from re-execution.
+
+  OPERATOR:
+    Human-captured evidence (screenshot, log, confirmation text).
+    QA cannot re-execute — verify evidence exists and is
+    consistent with the step's pass criteria.
+    If evidence is absent: BLOCKED (not PASS).
+
+  PLAYWRIGHT:
+    QA re-runs the test independently.
+    Evidence: exit code + stdout + screenshot path.
+    Never accept self-reported pass from Coder TIR.
+    If Playwright is not installed: BLOCKED, file missing
+    prerequisite in NEEDS_REVISION handoff.
+
 Verdict values:
   PASS     — criterion satisfied with evidence
   FAIL     — criterion not satisfied — MUST_FIX

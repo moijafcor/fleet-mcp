@@ -38,7 +38,7 @@ concepts:
     subclasses: [harnessable.DMT, harnessable.DIP, harnessable.TIR,
                  harnessable.SIR, harnessable.QAVerdict, harnessable.ADR,
                  harnessable.SRR, harnessable.CRR, harnessable.PIR,
-                 harnessable.EIR, harnessable.IB]
+                 harnessable.EIR, harnessable.IB, harnessable.AssetPackage]
     properties:
       append_only: true
       requires_predecessor: true
@@ -54,7 +54,7 @@ concepts:
                  harnessable.Coder, harnessable.SRE, harnessable.QA,
                  harnessable.Security, harnessable.Reviewer,
                  harnessable.Inspector, harnessable.EmergencyResponder,
-                 harnessable.Analyst]
+                 harnessable.Analyst, harnessable.Designer]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -68,7 +68,8 @@ concepts:
       status. Terminates when the next role accepts its artifact.
     subclasses: [harnessable.Architect, harnessable.Engineer,
                  harnessable.Coder, harnessable.SRE,
-                 harnessable.QA, harnessable.Security]
+                 harnessable.QA, harnessable.Security,
+                 harnessable.Designer]
     pipeline_gate: true
     invocation: board_status_driven
     output: artifact_that_gates_next_stage
@@ -522,7 +523,7 @@ concepts:
       provider:   anthropic | openai | google | cisco | local | other
       cost_tier:  low | medium | high
       rationale:  justification for this model for this role
-    roles_declared: 13
+    roles_declared: 14
 
   harnessable.SquadReference:
     type: concept
@@ -534,7 +535,7 @@ concepts:
       rather than emergent. Security is a mandatory decomposition
       trigger for auth, credentials, and network surface changes.
     encoded_in: framework/agents/engineer.md ## Squad Reference
-    role_count: 13
+    role_count: 14
     mandatory_triggers:
       - code_changes_plus_live_operations → Coder + SRE
       - auth_credentials_network_surface  → Security mandatory
@@ -608,6 +609,86 @@ concepts:
     differs_from_automated_rubric: >
       Human approves each loop iteration via board state.
       No max_iterations cap — Architect decides when to escalate.
+
+  harnessable.OperatorStep:
+    type: concept
+    definition: >
+      A DIP Implementation Step requiring human action that no
+      agent can perform. Declared with [OPERATOR] label. The agent
+      writes exact instructions and evidence requirements; the
+      human executes and returns evidence to the session.
+      QA verifies evidence exists and matches pass criteria —
+      it cannot re-execute the step independently.
+    dip_label: "[OPERATOR]"
+    rubric_layer: Verification Checklist
+    qa_evidence_requirement: >
+      Human-captured (screenshot, log, confirmation text).
+      Absent evidence = BLOCKED, not PASS.
+    failure_mode: >
+      Undeclared OPERATOR steps are invisible to QA.
+      The mandate appears complete when it is not.
+
+  harnessable.Designer:
+    type: harnessable.PipelineRole
+    definition: >
+      Produces pixel-precise visual artifacts from written
+      specifications. Never makes aesthetic decisions — every
+      colour, coordinate, size, and opacity comes from the
+      specification. At ambiguity: files BLOCKER. Output is
+      static files (SVG, PNG, ICO, WebP), not application code.
+      Verification uses ImageMagick identify for dimension
+      confirmation.
+    produces: [harnessable.AssetPackage]
+    tool_surface:
+      - svgo: SVG optimisation
+      - cairosvg: SVG → PNG/PDF raster export
+      - ImageMagick: resize, composite, ICO, dimension verify
+      - Inkscape CLI: SVG → PNG with exact pixel rendering
+      - ffmpeg: motion asset export
+    pipeline_position: pipeline
+    pipeline_gate: true
+    dip_step_label: "[Designer]"
+    blocker_threshold: any_ambiguity_in_specification
+    prohibited_from:
+      - making_aesthetic_decisions
+      - installing_GUI_design_tools
+      - producing_assets_without_specification
+      - committing_to_undeclared_paths
+
+  harnessable.AssetPackage:
+    type: harnessable.Artifact
+    label: Asset Package
+    definition: >
+      Produced by the Designer. A committed collection of
+      visual asset files (SVG masters, PNG exports, favicons,
+      OG images) derived from a single SVG source of truth.
+      Includes a manifest of every file with dimensions and
+      commit SHA.
+    produced_by: harnessable.Designer
+    path_convention: public/brand/ or DIP-declared path
+    verification: >
+      identify -format "%wx%h %f\n" *.png
+      All files at declared dimensions, committed.
+
+  harnessable.PlaywrightStep:
+    type: concept
+    definition: >
+      A DIP Implementation Step requiring browser automation via
+      Playwright. Declared with [PLAYWRIGHT] label. The Coder writes
+      the test file; QA or Inspector re-executes independently and
+      captures fresh evidence. Self-reported Coder pass is never
+      sufficient — QA must run and evidence independently.
+    dip_label: "[PLAYWRIGHT]"
+    rubric_layer: Verification Checklist
+    runtime: "npx playwright test | python -m pytest (playwright)"
+    evidence: exit_code + stdout + screenshot_path
+    prerequisite: Playwright declared available in AGENTS.md ## Browser Testing
+    qa_evidence_requirement: >
+      Independent re-execution by QA or Inspector.
+      Screenshot at test-results/{name}.png.
+    failure_mode: >
+      Undeclared PLAYWRIGHT steps are invisible to the Rubric.
+      Browser-required acceptance tests silently never run.
 
   harnessable.RoleScope:
     type: concept

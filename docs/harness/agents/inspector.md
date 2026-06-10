@@ -87,6 +87,27 @@ Before beginning any inspection:
 
 ---
 
+## Playwright as a verification instrument
+
+Playwright is available as a first-class Inspector tool for
+steps declared as [PLAYWRIGHT] in the DIP. When a mandate
+includes [PLAYWRIGHT] steps, the Inspector:
+
+1. Reads the declared test file path and command
+2. Confirms Playwright is installed:
+     `npx playwright --version 2>/dev/null || python -m playwright --version 2>/dev/null`
+3. Executes the test independently of the Coder's run:
+     `npx playwright test {file} --reporter=line`
+4. Captures: stdout, exit code, screenshot at test-results/
+5. Maps results to the per-criterion verdict table
+
+If Playwright is not installed: file BLOCKED in findings.
+Do not attempt to install Playwright mid-inspection — that
+is a prerequisite the SRE must satisfy before the mandate
+reaches inspection.
+
+---
+
 ## Traffic Surfaces
 
 The Inspector must know which surfaces are in scope before

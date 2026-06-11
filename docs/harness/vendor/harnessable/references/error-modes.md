@@ -1,230 +1,495 @@
-# Expected Error Modes
+# Error Modes — Classifier Knowledge Base
 
-Every error mode has a classification, a trigger condition, the expected agent
-response, and the board status outcome.
+This document is the classifier's decision instrument.
+When an acting agent fails, a classifier — human, QA role,
+or observer session — reads this document to identify the
+failure mode, determine whether retry is appropriate, and
+route to the prescribed response.
 
----
+The classifier must hold a fresh context with no shared
+contamination from the acting agent's session. An agent
+that has been looping cannot classify its own failure
+reliably — its context is the evidence.
 
-## Class A — Mandate Quality Errors
+## Principle: failure is information
 
-*Problems originating in the DMT itself. Architect must resolve.*
+Failure is not always a symptom of insufficient
+intelligence or missing context. Failure can be a signal
+from the current state of the world. Looping without
+classification is brute forcing. The correct response to
+any failure is first to classify it, then to act.
 
-### A1: Ambiguous Acceptance Criteria
-
-**Trigger:** Engineer cannot write a verifiable DIP verification checklist because
-the DMT's success criteria are subjective or unmeasurable.
-**Response:** Engineer documents specific ambiguities in DIP `## Open Questions`,
-sets board to `BLOCKED`, creates child task `[CLARIFICATION] {DMT title} — acceptance criteria`.
-**Board:** `IN_RECON → BLOCKED`
-
-### A2: Scope Entanglement
-
-**Trigger:** DMT scope overlaps with an existing `IN_PROGRESS` or `PLANNED` mandate,
-creating a conflict risk.
-**Response:** Engineer flags in DIP `## Field Discoveries` as `BLOCKER`, lists the
-conflicting mandates, proposes scope surgery. Architect decides which mandate owns
-the contested territory.
-**Board:** `IN_RECON → BLOCKED`
-
-### A3: Missing Prerequisites
-
-**Trigger:** DMT depends on infrastructure, schema, credentials, or prior work
-that doesn't exist yet.
-**Response:** Engineer creates prerequisite child tasks, marks them as
-dependencies in DIP `## Implementation Steps`. If critical path: `BLOCKED`.
-If can work around: `DEVIATION` field discovery, proceed.
-**Board:** `IN_RECON → BLOCKED` or continue with `DEVIATION` logged.
+No autonomous loop is permitted without a structurally
+separate observer that holds stop authority.
 
 ---
 
-## Class B — Recon Errors
+## Classification protocol
 
-*Problems found during Engineer's discovery pass.*
-
-### B1: Codebase Diverged from Assumption
-
-**Trigger:** Actual code structure, schema, or config differs significantly from
-what the DMT assumed (common after a prior mandate changed things).
-**Response:** `DEVIATION` field discovery. Update DIP architecture decisions.
-If deviation invalidates the entire approach: `BLOCKER`, notify Architect.
-**Board:** Continue in `IN_RECON`; BLOCKER if approach invalidated.
-
-### B2: Missing Documentation / Dark Knowledge
-
-**Trigger:** Key decisions are embedded in undocumented code, making recon incomplete.
-**Response:** Document the dark knowledge in DIP `## Recon Findings`. Create
-child task `[TECH_DEBT] Document {component}`. Proceed with best available understanding,
-note uncertainty level in `## Architecture Decisions`.
-**Board:** Continue; child task `BACKLOG`.
-
-### B3: Tracker Integration Unavailable During Recon
-
-**Trigger:** The project tracker integration (MCP, API, or other) is unreachable; cannot fetch DMT or update board.
-**Response:** If the DMT was provided in session: proceed with the local copy.
-Log all intended tracker operations in DIP `## Tracker Ops Log`. Execute retroactively when the integration restores.
-**Board:** Intended status transition logged; actual transition deferred.
-
-### B4: DMT Was Never Created
-
-**Trigger:** Engineer begins a session and no DMT exists in the tracker for the described work, even though the tracker is reachable. The mandate was delivered conversationally (chat message, meeting note, or verbal instruction) without being formalized as a tracker task.
-**Response:** Engineer creates the DMT retroactively from the conversational mandate description before setting board status to `IN_RECON`. All tracker operations that would have referenced the DMT are logged in DIP `## Tracker Ops Log` and executed after DMT creation. The DIP header marks the DMT field as `(Conversational mandate — DMT created retroactively)`.
-**Board:** Set to `IN_RECON` only after the DMT exists in the tracker.
+1. Collect all observable signals at the agent's layer
+2. Match against the mode entries below
+3. If match: apply prescribed response
+4. If no match: treat as UNRECOGNIZED_PATTERN
+5. Never retry before classifying
 
 ---
 
-## Class C — Implementation Errors
-
-*Problems that emerge during Coder's or SRE's execution.*
-
-### C1: DIP Step Is Unimplementable As Written
-
-**Trigger:** A DIP step assumes a capability, API surface, or configuration
-that doesn't work as described.
-**Response:** `DEVIATION` field discovery with specific failure details.
-Do not modify DIP steps directly — append `[DEVIATION]` note inline.
-Implement the closest valid equivalent. If no valid equivalent exists: `BLOCKER`.
-**Board:** Continue in `IN_PROGRESS`; BLOCKER if no path forward.
-
-### C2: Verification Gate Failure
-
-**Trigger:** A DIP verification checklist item fails (a domain check, validation step, health probe, or completion gate command exits non-zero).
-**Response:** Do not advance board. Document failure in TIR `## Blockers`.
-Diagnose and fix within mandate scope. If fix requires scope expansion:
-`DEVIATION` or new child task.
-**Board:** Remain `IN_PROGRESS`.
-
-### C3: Unintended Side Effect Discovered
-
-**Trigger:** Implementation change causes unexpected behaviour in an unrelated component.
-**Response:** Stop. Assess severity:
-
-- Minor (no functional regression): log in TIR, create `[TECH_DEBT]` child task.
-- Significant (functional regression): roll back the specific change, file `BLOCKER`.
-
-**Board:** `IN_PROGRESS → BLOCKED` if significant regression.
-
-### C4: Implementation Reveals Scope Expansion
-
-**Trigger:** Doing the work correctly requires changes larger than the DIP describes.
-**Response:** Do not silently expand scope. File `DEVIATION`, document the
-discovered scope delta. If expansion is small and low-risk: proceed with Deviation logged.
-If large: create child task for the expanded work, implement only original scope.
-**Board:** Continue with logged DEVIATION; child task `BACKLOG`.
+## Failure Modes
 
 ---
 
-## Class D — QA Errors
+### IMPLEMENTATION_ERROR
 
-*Problems found during verification.*
+Definition:
+  The agent's logic, code, or approach is wrong.
+  The world state is correct. Retrying with correction
+  is likely to converge.
 
-### D1: TIR Evidence Is Insufficient
+Observable signals:
+  - Test suite fails with assertion errors
+  - Syntax or type errors in produced code
+  - Logic produces wrong output, not no output
+  - The failure is deterministic and reproducible
 
-**Trigger:** QA cannot verify a claim in the TIR or SIR because evidence (test output,
-log snippet, screenshot, metric) is missing.
-**Response:** QA files `FAIL` verdict with specific evidence gaps listed.
-Do not guess or assume. Coder or SRE must supply missing evidence.
-**Board:** `IN_REVIEW → NEEDS_REVISION`
+Layer:   Application / Code
+Cause:   Agent error, not world state
 
-### D2: Implementation Passes TIR Claims But Fails DMT Acceptance Criteria
+Prescribed response:
+  Retry permitted — limited.
+  Inject per-criterion feedback (NEEDS_REVISION).
+  Maximum 3 iterations before escalating to Architect.
+  Each retry must target specific failing criteria.
 
-**Trigger:** Coder implemented what the DIP said, but the DIP was under-specified
-relative to what the Architect actually wanted.
-**Response:** QA verdict `FAIL`. In verdict, distinguish clearly:
-"Implementation matches DIP (Coder did their job) but DIP did not capture
-Architect intent (Engineer error)." Create child task for DIP correction.
-**Board:** `IN_REVIEW → NEEDS_REVISION`
+Back-off strategy:
+  None required — cause is internal to agent.
 
-### D3: Regression Found Outside Mandate Scope
-
-**Trigger:** QA spot-check finds a defect in code/infra not touched by this mandate.
-**Response:** Document in QA verdict as `OUT_OF_SCOPE_FINDING`. Create child task.
-Do not fail the current mandate for it unless it's critical path for the feature.
-**Board:** `VERIFIED` (with child task created) or `FAIL` if critical.
-
----
-
-## Class E — Operational Errors
-
-*Process and tooling failures.*
-
-### E1: Board Status Gets Out of Sync
-
-**Trigger:** Agent advanced work without updating the board (common when the tracker integration was unavailable).
-**Response:** On the next session with integration access, reconstruct the correct current status from the DIP changelog. Execute all pending transitions in order.
-Log reconciliation in DIP `## Tracker Ops Log`.
-
-### E2: DIP File Missing at Coding Start
-
-**Trigger:** Coder or SRE begins a session with a DMT in `IN_PROGRESS` but no DIP exists.
-**Response:** Full stop. Set board to `BLOCKED`. Create child task for Engineer
-to produce DIP retroactively. Do not proceed without it.
-**Board:** `IN_PROGRESS → BLOCKED`
-
-### E3: Role Collapse
-
-**Trigger:** A single agent implements work AND issues the QA verdict.
-**Response:** Flag in DIP as a process violation. Mark QA verdict as
-`UNVERIFIED (self-review)`. Architect must conduct a manual review before
-advancing to `DONE`.
-**Board:** `VERIFIED` blocked until Architect signs off manually.
-
-### E4: Child Task Orphaned
-
-**Trigger:** A child task is created but not linked to the parent DMT or DIP.
-**Response:** Any agent noticing an orphaned task should link it retroactively.
-Add a row to the parent DIP `## Child Tasks` section.
+Loop permitted: YES (with iteration cap and feedback)
 
 ---
 
-## Class F — SRE Production-Safety Errors
+### ENVIRONMENT_FAILURE
 
-*Problems specific to infrastructure and operational mandate execution.*
+Definition:
+  The world state has changed or is incorrect.
+  The agent's logic may be sound but the environment
+  cannot fulfil the operation. Retrying without
+  changing the environment will not converge.
 
-### F1: Baseline Already Degraded at Mandate Start
+Observable signals:
+  - Service unreachable, connection refused
+  - Dependency unavailable (database, API, file)
+  - Infrastructure state diverged from expected
+  - Operation fails identically across multiple attempts
+    with no variation in error
 
-**Trigger:** Pre-change health check (Step 0) shows the target system is already
-in a degraded state before the SRE touches anything.
-**Response:** File a production-safety `BLOCKER` immediately. Do not apply
-any changes. Document the degraded baseline in SIR `## Pre-Change Baseline`.
-The DIP blast radius assumes a healthy starting state — changes applied to a
-degraded system can compound the failure unpredictably.
-**Board:** `IN_PROGRESS → BLOCKED`
+Layer:   Infrastructure / Network / External service
+Cause:   World state, not agent error
 
-### F2: Service Degraded During Execution
+Prescribed response:
+  BLOCKER immediately.
+  Do not retry. Package observable state.
+  Escalate with: symptoms, last known good state,
+  all attempted actions, what access is needed.
 
-**Trigger:** A health check run between DIP steps reveals degradation that was
-not present at baseline.
-**Response:** Stop all further change steps. Assess whether the degradation is
-caused by the changes just applied. Decide within 2 minutes: roll forward or
-roll back. Execute the DIP rollback procedure exactly — do not improvise.
-Document the incident and decision in SIR `## Incident Notes`. Restore to
-baseline health before setting BLOCKED.
-**Board:** `IN_PROGRESS → BLOCKED`
+Back-off strategy:
+  Stop. Environment does not heal through retries.
 
-### F3: Rollback Procedure Absent or Inoperable
+Loop permitted: NO
 
-**Trigger:** The DIP has no `## Rollback Procedure` section, or the documented
-procedure is incomplete, contradictory, or known not to work.
-**Response:** File a production-safety `BLOCKER` before executing any change step.
-Do not proceed. The SRE does not execute a mandate without a verified rollback path.
-**Board:** `IN_PROGRESS → BLOCKED` (or `PLANNED → BLOCKED` if discovered before starting)
+---
 
-### F4: Blast Radius Understated
+### SPECIFICATION_CONFLICT
 
-**Trigger:** SRE recon reveals the actual impact of the change is larger than
-the DIP blast radius declaration states — more dependent services, more users,
-or a worse partial-application failure mode than documented.
-**Response:** File a `DEVIATION`, update the DIP blast radius declaration, and
-halt until Architect confirms the mandate scope still applies at the corrected
-blast radius. Do not proceed with a change whose risk was approved under
-incomplete information.
-**Board:** `IN_PROGRESS → BLOCKED` pending Architect confirmation.
+Definition:
+  The acceptance criteria are internally contradictory,
+  impossible to satisfy simultaneously, or conflict with
+  a real-world constraint the Architect did not anticipate.
 
-### F5: Observation Window Reveals Unexpected Degradation
+Observable signals:
+  - Satisfying criterion A makes criterion B impossible
+  - Implementation is blocked by a constraint not in spec
+  - Multiple interpretations of spec lead to different
+    and incompatible implementations
 
-**Trigger:** During the post-change observation window (Phase 3), logs or metrics
-show degradation that was not anticipated in the DIP verification checklists.
-**Response:** Incident Response Mode activates. Stop monitoring passively — assess
-whether rollback is required. Do not set `IN_REVIEW` until the observation window
-completes cleanly or the incident is resolved and documented.
-**Board:** Remain `IN_PROGRESS` until the window is clean; `BLOCKED` if rollback executed.
+Layer:   Requirements / Mandate
+Cause:   Specification error, not agent error
+
+Prescribed response:
+  BLOCKER immediately. Return to Architect.
+  Do not attempt to resolve the conflict by choosing.
+  Document both interpretations and the contradiction.
+
+Back-off strategy:
+  Stop. Retrying against contradictory requirements
+  does not resolve the contradiction.
+
+Loop permitted: NO
+
+---
+
+### BELOW_HORIZON
+
+Definition:
+  The failure cause exists at a layer the agent cannot
+  observe or access from its current position.
+  The agent's observable layer shows symptoms but the
+  cause is below its visibility horizon.
+
+  NOTE: Agent capability is not the limitation.
+  A CC session can navigate KVM consoles, interpret
+  boot output, recompile bootloaders. The limitation is
+  pattern recognition — the agent does not know to look
+  at a lower layer because the symptom pattern has not
+  been matched to its cause layer.
+
+  If the pattern exists in WORLD_MODEL.md, the agent
+  CAN execute the recovery autonomously. If not, the
+  agent cannot know what it doesn't know.
+
+Observable signals:
+  - Persistent failure at the observable layer
+    with no apparent cause at that layer
+  - All observable explanations exhausted
+  - Timing correlation with hardware or
+    infrastructure events
+
+Layer:   Below the agent's visibility horizon
+         (Hardware → Boot → OS is below SSH → Service)
+Cause:   Unknown from agent's position
+
+Prescribed response:
+  Package observable state and escalate.
+  Escalation package must include:
+    Observable symptoms (exact)
+    Last known good state (timestamp)
+    All attempted actions (what, when, result)
+    Exhaustion evidence ("no layer N cause found")
+    Access request (KVM, IPMI, rescue mode,
+    provider console, physical access)
+  Stop all action until lower-layer access granted.
+
+  First check WORLD_MODEL.md ## Failure Patterns
+  for matching symptom pattern before escalating.
+  If match found: execute the documented recovery path.
+  If no match: escalate, then encode discovery on resolution.
+
+Back-off strategy:
+  Stop. Lower-layer access is required before any
+  further action is meaningful.
+
+Loop permitted: NO
+
+---
+
+### OSCILLATION
+
+Definition:
+  The agent alternates between two or more wrong states
+  without converging. Each iteration undoes or contradicts
+  the prior iteration.
+
+Observable signals:
+  - Output of iteration N conflicts with iteration N-2
+  - The same files are created, modified, and reverted
+    across multiple iterations
+  - Test results alternate between passing and failing
+    on the same criteria across iterations
+  - Agent references its own prior wrong output as
+    justification for current action
+
+Layer:   Agent reasoning / Context
+Cause:   Missing forcing constraint or contradictory
+         signals in context
+
+Prescribed response:
+  Stop immediately. Do not permit another iteration.
+  Inject a forcing constraint before any retry:
+    "Do X. Do not do Y. The conflict is Z."
+  If oscillation persists after forcing constraint:
+    discard context, fresh session, new framing.
+
+Back-off strategy:
+  Hard stop. Each oscillation iteration deepens
+  context contamination.
+
+Loop permitted: NO
+
+---
+
+### REGRESSION
+
+Definition:
+  Each iteration causes previously passing criteria
+  to fail. The agent is making changes that break
+  established functionality while attempting to fix
+  the failing criteria.
+
+Observable signals:
+  - Completion Gate passes that passed before
+    now fail after the latest changes
+  - Test count passing decreases across iterations
+  - Agent introduces changes to files unrelated to
+    the failing criterion
+
+Layer:   Agent reasoning / Code
+Cause:   Scope creep in changes, missing isolation
+
+Prescribed response:
+  Stop. Rollback to the last state where all previously
+  passing criteria still passed.
+  File a new DIP with explicit constraint:
+  "Do not modify X, Y, Z — they are currently passing."
+
+Back-off strategy:
+  Rollback first. Retry only from a clean baseline.
+
+Loop permitted: NO
+
+---
+
+### CONTEXT_CORRUPTION
+
+Definition:
+  The agent's accumulated context has degraded its
+  reasoning quality. It may reference prior wrong outputs
+  as valid, repeat the same approach despite evidence
+  it failed, or show increasing incoherence across turns.
+
+Observable signals:
+  - Agent cites its own prior incorrect reasoning
+    as justification
+  - The same approach is attempted a third time
+    without meaningful variation
+  - Agent output quality visibly degrades across turns
+  - Back-pressure signals present: increasing hedging,
+    unsolicited warnings, qualification density rising
+  - Model jail time: refusals on previously executed
+    actions, conservative scope interpretation
+
+Layer:   Model reasoning / Context window
+Cause:   Context accumulation, back-pressure cascade
+
+Prescribed response:
+  Discard the acting agent's context entirely.
+  Do not inject more instructions into the
+  contaminated session — this deepens corruption.
+  Package: last clean state + observable symptoms.
+  Start a fresh session with clean context.
+  The classifier's fresh read IS the treatment.
+
+Back-off strategy:
+  Context discard. Exponential context growth
+  does not resolve contamination.
+
+Loop permitted: NO
+
+---
+
+### MISSING_PREREQUISITE
+
+Definition:
+  The task requires prior work that was not completed,
+  a dependency that was not provisioned, or a state
+  that was assumed present but is not.
+
+Observable signals:
+  - Task references a resource, file, or state
+    that does not exist
+  - A prior mandate was assumed DONE but is not
+  - A dependency tool or service is not installed
+    or not running
+
+Layer:   Sequencing / Dependencies
+Cause:   Planning error or incomplete prior work
+
+Prescribed response:
+  Stop. File the missing prerequisite as a blocker.
+  Do not attempt to resolve the prerequisite inline —
+  file a separate mandate or DIP for it.
+  The current mandate resumes after the prerequisite
+  is satisfied.
+
+Back-off strategy:
+  Stop. The prerequisite must exist before this
+  task can proceed.
+
+Loop permitted: NO
+
+---
+
+### SCOPE_OVERFLOW
+
+Definition:
+  The task has grown beyond the boundaries of the
+  original mandate. The agent is attempting work that
+  was not commissioned and may not be wanted.
+
+Observable signals:
+  - Implementation touches systems not in the DIP
+  - Agent proposes changes beyond acceptance criteria
+  - TIR describes work not in the original mandate scope
+  - The agent is "while I'm in here" reasoning
+
+Layer:   Scope / Mandate boundary
+Cause:   Undisciplined expansion
+
+Prescribed response:
+  Stop the overflow work immediately.
+  Complete only what is in the mandate scope.
+  File a new mandate for the identified additional work.
+  Do not commit overflow changes.
+
+Back-off strategy:
+  Scope reset. File and defer, do not absorb.
+
+Loop permitted: NO (on overflow work)
+
+---
+
+### RATE_EXHAUSTION
+
+Definition:
+  An external API, service, or resource has hit its
+  rate limit or quota. The operation will succeed
+  after the rate window resets.
+
+Observable signals:
+  - HTTP 429 Too Many Requests
+  - API error: rate limit exceeded, quota exhausted
+  - Explicit retry-after header in response
+
+Layer:   External API / Service
+Cause:   Request volume, not logic error
+
+Prescribed response:
+  Backoff with prescribed delay.
+  Read retry-after header if present.
+  Default delays: 60s, 300s, 1800s (exponential).
+  Log the rate limit event — it may indicate a
+  design problem if it recurs.
+
+Back-off strategy:
+  Exponential backoff. Retry is appropriate.
+  Do not hammer the endpoint.
+
+Loop permitted: YES (with backoff and iteration cap)
+
+---
+
+### UNRECOGNIZED_PATTERN
+
+Definition:
+  The failure does not match any known mode.
+  The classifier cannot determine the cause layer
+  or appropriate response from available signals.
+
+Observable signals:
+  - None of the above modes match
+  - The failure is inconsistent or non-reproducible
+  - Cause layer is indeterminate
+
+Layer:   Unknown
+Cause:   Unknown
+
+Prescribed response:
+  One retry maximum to gather additional signal.
+  If failure recurs: BLOCKER, escalate to human.
+  Include: all observable signals, what was attempted,
+  why no known mode matched.
+  After resolution: encode as a new named mode
+  in this document if the pattern is likely to recur.
+
+Back-off strategy:
+  Single retry for signal gathering only.
+  Do not loop on an unclassified failure.
+
+Loop permitted: ONCE (signal gathering only)
+
+---
+
+## Model-Layer Signals (Back Pressure)
+
+The model itself is an observer. Its back-pressure
+signals manifest in output text before any programmatic
+hook fires. A structurally separate classifier can read
+these signals; the acting agent cannot — it is inside
+the contaminated context.
+
+---
+
+### THROTTLING
+
+Definition:
+  The model is applying friction to the acting agent's
+  output. Not a refusal — a deceleration signal.
+
+Observable signals:
+  - Hedging density increasing across turns
+    ("this might", "you may want to consider",
+    "I should note that")
+  - Unsolicited warnings inserted before executing
+  - Confirmation requests the task did not require
+  - Output quality declining relative to prior turns
+  - Caveat-to-content ratio rising
+
+What it means:
+  The model has detected something in the context that
+  makes it cautious. The cause may be context
+  contamination, an approaching capability boundary,
+  or accumulated failure signals.
+
+Prescribed response:
+  Treat as an early CONTEXT_CORRUPTION signal.
+  Reduce scope. Simplify the next instruction.
+  If throttling persists: consider context discard.
+
+---
+
+### JAIL_TIME
+
+Definition:
+  The model is refusing actions it previously executed.
+  Context contamination has crossed a threshold —
+  the model is applying broad caution to the session.
+
+Observable signals:
+  - Refusals on actions that succeeded in prior turns
+  - Increasingly conservative scope interpretation
+  - The Auto mode block pattern: benign subsequent
+    actions refused because of earlier context
+    (e.g. diagnostic command blocked after
+    credential-adjacent sequence)
+  - Agent output becomes generic and non-specific
+
+Cascade property:
+  Jail time is not isolated to the refused action.
+  The model's caution spreads to adjacent actions.
+  The contaminated context degrades ALL reasoning
+  in the session, not just the specific refused action.
+
+Prescribed response:
+  Discard context. Do not attempt to reason the model
+  out of jail time within the same session — this
+  deepens the contamination.
+  Start a fresh session.
+  Package last clean state before discarding.
+
+---
+
+## Classification quick reference
+
+| Mode                  | Layer              | Retry | Response        |
+|-----------------------|--------------------|-------|-----------------|
+| IMPLEMENTATION_ERROR  | Code               | YES   | Feedback + cap  |
+| ENVIRONMENT_FAILURE   | Infrastructure     | NO    | BLOCKER         |
+| SPECIFICATION_CONFLICT| Requirements       | NO    | Return Architect |
+| BELOW_HORIZON         | Below visibility   | NO    | Escalate + KVM  |
+| OSCILLATION           | Agent reasoning    | NO    | Force constraint |
+| REGRESSION            | Code               | NO    | Rollback        |
+| CONTEXT_CORRUPTION    | Context window     | NO    | Discard context |
+| MISSING_PREREQUISITE  | Sequencing         | NO    | BLOCKER         |
+| SCOPE_OVERFLOW        | Mandate boundary   | NO    | File + defer    |
+| RATE_EXHAUSTION       | External API       | YES   | Backoff         |
+| UNRECOGNIZED_PATTERN  | Unknown            | ONCE  | Signal + BLOCKER|
+| THROTTLING (model)    | Model layer        | —     | Reduce scope    |
+| JAIL_TIME (model)     | Model layer        | —     | Discard context |

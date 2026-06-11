@@ -137,5 +137,5 @@ codebase; the DIP and TIR belong there.
 | QA issues FAIL for TIR evidence gaps | Tighten TIR evidence section template | Coder doesn't know what evidence to collect |
 | BLOCKER field discoveries > 2 per mandate | Tighten Engineer recon passes | Recon is insufficiently deep |
 | `NEEDS_REVISION` issued twice on same mandate | Mandate scope was entangled | Architect needs stricter scope isolation at DMT time |
-| Error Mode D2 fires (DIP missed intent) | Add Architect review of DIP before PLANNED | Engineer-Architect handoff has a gap |
+| SPECIFICATION_CONFLICT or related mandate-capture failure recurs | Add Architect review of DIP before PLANNED | Engineer-Architect handoff has a gap |
 | Sub-agent delegated but findings unused | Add synthesis requirement to delegation protocol | Delegation pattern is cargo-culted |

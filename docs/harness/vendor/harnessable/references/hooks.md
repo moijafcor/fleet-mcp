@@ -146,6 +146,7 @@ forced to continue working until the gate passes.
 | Script | Purpose |
 | --- | --- |
 | `completion_gate.py` | Runs every command in AGENTS.md `## Completion Gate`; blocks completion if any fail |
+| `session_cost.py` | Logs token consumption (role, mandate, model, tokens, estimated USD) to `.harnessable/logs/session-cost.YYYY-MM.jsonl` |
 
 **Payload fields used:**
 
@@ -153,7 +154,11 @@ forced to continue working until the gate passes.
 {
   "session_id": "…",
   "cwd": "/path/to/project",
-  "hook_event_name": "Stop"
+  "hook_event_name": "Stop",
+  "total_input_tokens": 42180,
+  "total_output_tokens": 8934,
+  "num_turns": 47,
+  "model": "claude-sonnet-4-6"
 }
 ```
 

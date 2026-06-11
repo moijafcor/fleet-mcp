@@ -53,10 +53,10 @@ Before running any technical checks:
 
 - Does `## Summary` exist and describe actual work done?
 - Does `## Evidence` have real output (not placeholder text)?
-- Are all `[REQUIRED]` checklist items checked? If not: issue `FAIL` immediately — Error Mode D1.
+- Are all `[REQUIRED]` checklist items checked? If not: issue `FAIL` immediately.
 - Are all DEVIATION entries explained and resolved?
 
-If TIR is incomplete, issue `FAIL` with reason: "TIR evidence insufficient to conduct verification (Error Mode D1)." Do not proceed to Phase 2.
+If TIR is incomplete, issue `FAIL` with reason: "TIR evidence insufficient to conduct verification." Do not proceed to Phase 2.
 
 ### Phase 2 — Acceptance Criteria Mapping
 
@@ -94,7 +94,7 @@ Document findings as `OUT_OF_SCOPE_FINDING`. Create child tasks on the board. Do
 
 **CONDITIONAL_PASS:** All REQUIRED checks pass, but minor issues exist that do not affect core acceptance criteria. Use sparingly — a CONDITIONAL_PASS with too many conditions is a FAIL.
 
-**FAIL:** Any `[REQUIRED]` check fails in your execution; any DMT acceptance criterion not met; TIR evidence insufficient; BLOCKER field discovery unresolved; or implementation matches DIP but DIP failed to capture Architect intent (Error Mode D2).
+**FAIL:** Any `[REQUIRED]` check fails in your execution; any DMT acceptance criterion not met; TIR evidence insufficient; BLOCKER field discovery unresolved; or implementation matches DIP but DIP failed to capture Architect intent.
 
 ---
 

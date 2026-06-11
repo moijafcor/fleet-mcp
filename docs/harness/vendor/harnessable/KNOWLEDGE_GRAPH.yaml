@@ -54,7 +54,8 @@ concepts:
                  harnessable.Coder, harnessable.SRE, harnessable.QA,
                  harnessable.Security, harnessable.Reviewer,
                  harnessable.Inspector, harnessable.EmergencyResponder,
-                 harnessable.Analyst, harnessable.Designer]
+                 harnessable.Analyst, harnessable.Designer,
+                 harnessable.ProjectManager]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -260,11 +261,43 @@ concepts:
     knowledge_graph_obligations:
       - file_ontology_gap_for_undeclared_infra_concepts: true
       - absent_file_exception: true
+    protocol: harnessable.SREProtocol
     rsi_obligations:
       frequency: every_session
       conditional_on_failure: false
       closing_step: Phase 5 Framework Observation
       recorded_in: "SIR ## SRE Sign-Off"
+
+  harnessable.SREProtocol:
+    type: concept
+    definition: >
+      The ordered protocol the SRE agent executes
+      during any infrastructure mandate. Begins with
+      Pass 0 (world model consultation + failure
+      classification) before any reconnaissance or
+      action. Closes with post-resolution encoding
+      obligation before mandate closure.
+    world_model_consultation:
+      pass: 0 (first, unconditional)
+      searches:
+        - WORLD_MODEL.md ## Failure Patterns
+        - WORLD_MODEL.md ## Vendor Capabilities
+        - WORLD_MODEL.md ## Known Edge Cases
+      if_match: declare explicitly, follow documented procedure
+      if_no_match: proceed with recon, flag for encoding
+    failure_classification:
+      pass: 0b (before any action)
+      document: references/error-modes.md
+      declares: mode, signals, layer, loop_permitted,
+                prescribed_response
+      constraint: >
+        Do not act on Loop permitted: NO without
+        human approval
+    encoding_obligation:
+      timing: before mandate closes (not after, not eventually)
+      trigger: any pattern not already in WORLD_MODEL.md
+      format: WORLD_MODEL.md ## Failure Patterns entry
+      declaration_required: YES (even when no new pattern)
 
   harnessable.QA:
     type: harnessable.Role
@@ -523,7 +556,7 @@ concepts:
       provider:   anthropic | openai | google | cisco | local | other
       cost_tier:  low | medium | high
       rationale:  justification for this model for this role
-    roles_declared: 14
+    roles_declared: 15
 
   harnessable.SquadReference:
     type: concept
@@ -535,7 +568,7 @@ concepts:
       rather than emergent. Security is a mandatory decomposition
       trigger for auth, credentials, and network surface changes.
     encoded_in: framework/agents/engineer.md ## Squad Reference
-    role_count: 14
+    role_count: 15
     mandatory_triggers:
       - code_changes_plus_live_operations → Coder + SRE
       - auth_credentials_network_surface  → Security mandatory
@@ -544,7 +577,7 @@ concepts:
       - Role-annotated Implementation Steps in multi-role DIPs
       - Pre-structured TIR sections per executing role
       - Coder boundary rule: BLOCKER not workaround at boundaries
-      - SRE handoff: baseline + rollback + observation window
+      - SRE handoff: Pass 0 (world model + failure classification) + baseline + rollback + observation window
       - Security non-optional for security-relevant mandates
 
   harnessable.Rubric:
@@ -610,6 +643,233 @@ concepts:
       Human approves each loop iteration via board state.
       No max_iterations cap — Architect decides when to escalate.
 
+  harnessable.WorldModel:
+    type: harnessable.Artifact
+    label: World Model
+    definition: >
+      Project-level operational knowledge base. Encodes
+      what the world looks like from this project —
+      vendor capabilities, infrastructure topology,
+      failure patterns discovered in production, known
+      edge cases. Lives at the project root alongside
+      AGENTS.md, outside docs/harness/, so the framework
+      is swappable without losing accumulated knowledge.
+      Every resolved incident that reveals a new pattern
+      must update WORLD_MODEL.md before the mandate closes.
+    path_convention: WORLD_MODEL.md (project root)
+    template: framework/templates/world-model.md
+    project_owned: true
+    framework_never_modifies: true
+    sections:
+      - Infrastructure Topology
+      - Vendor Capabilities
+      - Failure Patterns
+      - Service Dependencies
+      - Known Edge Cases
+      - Incident Index
+    update_obligation: >
+      Mandatory after every incident that reveals a
+      pattern not previously encoded. Filed before
+      mandate closure. SIR ## Knowledge Extracted
+      section declares the update.
+
+  harnessable.IncidentRecord:
+    type: harnessable.Artifact
+    label: Incident Record
+    definition: >
+      Full record of a resolved production incident.
+      Captures what was learned — the pattern, the tool,
+      the procedure — distinct from what was done (SIR).
+      Lives in docs/incidents/ at project root.
+      Project-owned, outside docs/harness/.
+    path_convention: docs/incidents/YYYY-MM-DD-{slug}.md
+    project_owned: true
+    framework_never_modifies: true
+    required_sections:
+      - Symptom
+      - Root Cause
+      - Layer
+      - Discovery Path
+      - Resolution
+      - Knowledge Extracted
+      - WORLD_MODEL.md update
+
+  harnessable.FailureMode:
+    type: concept
+    definition: >
+      A named, classified category of agent failure with
+      observable signals, cause layer, prescribed response,
+      and back-off strategy. The classifier's unit of
+      recognition. Encoded in references/error-modes.md.
+      Every unrecognized failure that recurs becomes a
+      new named mode.
+    document: framework/vendor/harnessable/references/error-modes.md
+    modes:
+      - IMPLEMENTATION_ERROR
+      - ENVIRONMENT_FAILURE
+      - SPECIFICATION_CONFLICT
+      - BELOW_HORIZON
+      - OSCILLATION
+      - REGRESSION
+      - CONTEXT_CORRUPTION
+      - MISSING_PREREQUISITE
+      - SCOPE_OVERFLOW
+      - RATE_EXHAUSTION
+      - UNRECOGNIZED_PATTERN
+    principle: >
+      Failure is information. Classify before acting.
+      No autonomous loop without a structurally separate
+      observer that holds stop authority.
+
+  harnessable.BackPressureSignal:
+    type: concept
+    definition: >
+      Model-layer signal that manifests in output text
+      before any programmatic hook fires. The model itself
+      is an observer. Back-pressure is the earliest
+      warning in the stack — preceding exit codes,
+      test failures, and Completion Gate results.
+      Readable only by a classifier with a fresh context;
+      the acting agent cannot observe its own back-pressure.
+    signals:
+      THROTTLING: >
+        Hedging density rising, unsolicited warnings,
+        unprompted confirmation requests, caveat-to-content
+        ratio increasing. Early CONTEXT_CORRUPTION signal.
+      JAIL_TIME: >
+        Refusals on previously executed actions.
+        Cascade property: contaminates adjacent actions.
+        Requires context discard, not negotiation.
+
+  harnessable.ClassifierAgent:
+    type: concept
+    definition: >
+      A structurally separate observer that reads failure
+      signals from an acting agent's session and routes
+      to the prescribed response per error-modes.md.
+      Not a role — a pattern. Instantiated as QA role,
+      human board gate, or dedicated observer session
+      depending on risk level. Holds stop authority
+      unconditionally. Must hold a fresh context with
+      no shared contamination from the acting agent.
+    document: >
+      framework/vendor/harnessable/references/classifier.md
+    requirements:
+      - fresh_context: no shared contamination
+      - stop_authority: unconditional
+      - reads: error-modes.md
+      - reads: WORLD_MODEL.md failure patterns
+      - observes: programmatic signals (Layer 1)
+      - observes: model behaviour signals (Layer 2)
+    instantiations:
+      qa_role:
+        context: Rubric loop
+        separation: fresh CC session reads TIR as artifact
+        loop: human-gated via board state
+      human:
+        context: board gate (all mandate transitions)
+        separation: inherent
+        loop: explicit human decision to re-open
+      observer_session:
+        context: high-risk automated loops
+        separation: fresh CC session
+        loop: observer holds stop authority
+    principle: >
+      No autonomous loop is safe without a classifier.
+      No classifier is valid without separation.
+      No loop is safe without an iteration cap.
+
+  harnessable.VisibilityHorizon:
+    type: concept
+    definition: >
+      The layer below which neither the acting agent
+      nor the classifier can observe the cause of a
+      failure. Symptoms manifest at the observable layer
+      while the cause lives below it. Agent capability
+      is not the limitation — pattern recognition is.
+      If the pattern exists in WORLD_MODEL.md the agent
+      can execute recovery autonomously. If not, no
+      amount of retrying at the observable layer will
+      reveal a below-horizon cause.
+    layers:
+      below_horizon: Hardware, Firmware, Bootloader, Kernel
+      agent_layer:   OS, Network, Services, Application
+      model_layer:   Model reasoning, back-pressure signals
+    failure_mode: BELOW_HORIZON (see error-modes.md)
+    resolution: >
+      Check WORLD_MODEL.md for matching pattern.
+      If match: execute documented recovery.
+      If no match: package observable state,
+      request lower-layer access, stop.
+
+  harnessable.BackOffStrategy:
+    type: concept
+    definition: >
+      The prescribed response when a failure mode
+      declares Loop permitted: NO. Distinct from retry.
+      Retry attempts the same operation again.
+      Back-off stops, packages observable state,
+      declares what is needed to proceed, and halts
+      further action at the failing layer.
+      Back-off without a package is just stopping.
+      Back-off with a package is actionable escalation.
+    components:
+      - stop: halt all action on the failing path
+      - package: collect observable state completely
+      - declare: what access or prerequisite is needed
+      - halt: do not consume further time at wrong layer
+    contrast_with: retry (same operation, same layer)
+    escalation_package:
+      - observable symptoms (exact)
+      - last known good state (timestamp)
+      - all attempted actions (what, when, result)
+      - exhaustion evidence
+      - access request (KVM, IPMI, console, human)
+
+  harnessable.SessionCostLog:
+    type: harnessable.Artifact
+    label: Session Cost Log
+    definition: >
+      Monthly JSONL log of token consumption per agent
+      session. Written by hooks/stop/session_cost.py at
+      session end. Each entry declares role, mandate,
+      model, token counts, and estimated USD cost
+      cross-referenced against the Models Manifest.
+      Feeds session_cost_report.py for Orchestrator
+      budget decisions.
+    path_convention: .harnessable/logs/session-cost.YYYY-MM.jsonl
+    written_by: hooks/stop/session_cost.py
+    read_by: framework/tools/session_cost_report.py
+    entry_fields:
+      - ts
+      - session_id
+      - role
+      - mandate
+      - model
+      - input_tokens
+      - output_tokens
+      - total_tokens
+      - tool_calls
+      - duration_seconds
+      - estimated_cost_usd
+
+  harnessable.TokenBudget:
+    type: concept
+    definition: >
+      Optional per-role cost ceiling declared in
+      AGENTS.md ## Token Budget. Allows the Orchestrator
+      to make informed model assignment decisions and
+      flag sessions that exceed expected cost. Compared
+      against SessionCostLog entries by
+      session_cost_report.py.
+    declared_in: AGENTS.md ## Token Budget
+    enforced_by: session_cost_report.py (advisory)
+    note: >
+      Enforcement is advisory — the Stop hook logs cost
+      but does not block session exit on budget overrun.
+      Budget overruns surface in the report for human
+      review, not as automated blocks.
+
   harnessable.OperatorStep:
     type: concept
     definition: >
@@ -654,6 +914,38 @@ concepts:
       - installing_GUI_design_tools
       - producing_assets_without_specification
       - committing_to_undeclared_paths
+
+  harnessable.ProjectManager:
+    type: harnessable.Role
+    definition: >
+      The connector between the marketplace and the technical team.
+      Faces outward — toward stakeholders, customers, partners, and
+      other teams. The Orchestrator faces inward. The PM negotiates
+      what comes in; the Orchestrator decides how it gets executed.
+      Not in the technical pipeline. Produces communication,
+      coordination, and administrative outputs — not pipeline
+      artifacts. Serves multiple teams simultaneously; may be
+      external to the teams it serves.
+    produces: [stakeholder_communication, status_reports,
+               meeting_notes, calendar_commitments, contracts]
+    tool_surface:
+      - Gmail MCP: email drafting, sending, inbox triage
+      - Google Calendar MCP: scheduling, commitment tracking
+      - Google Drive MCP: documents, contracts, invoices
+      - GitHub Projects MCP: board state reads, issue filing
+      - Narrator output: PM deploys CP to declared destinations
+    pipeline_position: external_facing
+    pipeline_gate: false
+    prohibited_from:
+      - making_technical_decisions
+      - authoring_toms_or_dips_or_pipeline_artifacts
+      - commissioning_or_directing_pipeline_roles
+      - committing_to_technical_timelines_without_orchestrator
+      - exposing_internal_complexity_to_stakeholders
+    orchestrator_interface: >
+      PM is the single point of contact to the Orchestrator.
+      Technical decisions are routed as Decision Requests.
+      The Orchestrator's reasoning is never exposed verbatim.
 
   harnessable.AssetPackage:
     type: harnessable.Artifact
@@ -947,6 +1239,17 @@ concepts:
       - pre_change_baseline_required: true
       - observation_window_required: true
       - rollback_viability_confirmed: true
+    knowledge_extracted:
+      required: true
+      timing: before mandate closes
+      branches:
+        YES: >
+          Full pattern encoding matching
+          WORLD_MODEL.md ## Failure Patterns format.
+          WORLD_MODEL.md update confirmed with commit SHA.
+        NO: >
+          Explicit declaration required.
+          Silence is not permitted.
 
   harnessable.QAVerdict:
     type: harnessable.Artifact
@@ -1111,6 +1414,22 @@ concepts:
       mechanism: >
         Gate file arms before first code edit. Hook blocks Write/Edit/
         MultiEdit until EIR file exists in docs/mandates/emergency/.
+    knowledge_extracted:
+      required: true
+      timing: before mandate closes
+      note: >
+        If the failure required Emergency protocol,
+        ask whether the pattern should have been in
+        WORLD_MODEL.md. If yes: this section prevents
+        recurrence.
+      branches:
+        YES: >
+          Full pattern encoding matching
+          WORLD_MODEL.md ## Failure Patterns format.
+          WORLD_MODEL.md update confirmed with commit SHA.
+        NO: >
+          Explicit declaration required.
+          Silence is not permitted.
 
   harnessable.ADR:
     type: harnessable.Artifact
@@ -1453,7 +1772,8 @@ concepts:
     constraint: >
       A TIR claiming a BLOCKED_CRITERION passed is a false evidence
       claim equivalent to fabricating test output. Protocol violation
-      at the same severity as Error Mode D1.
+      requiring classifier review against
+      framework/vendor/harnessable/references/error-modes.md.
 
   harnessable.PrerequisiteMandate:
     type: concept
@@ -1497,8 +1817,8 @@ concepts:
     constraint: >
       A DIP section that makes an ExternalFact claim without a cited
       URL and fetch date is incomplete. QA may reject the TIR on
-      this basis under Error Mode D2 (DIP failed to capture current
-      reality).
+      this basis as a requirements / mandate failure; classify using
+      framework/vendor/harnessable/references/error-modes.md.
     see: framework/agents/engineer.md — Pass 4
 
   harnessable.TrainingCutoff:

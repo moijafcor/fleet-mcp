@@ -65,7 +65,7 @@ See `agents/engineer.md` for the full recon protocol. Minimum recon:
 **Multi-role decomposition:**
 When implementation spans role boundaries, the DIP must organise steps into
 named phases and label every step with its executing type. See
-`agents/engineer.md ## Squad Reference` for the full 14-role profile table,
+`agents/engineer.md ## Squad Reference` for the full 15-role profile table,
 mandatory decomposition triggers (code + live ops → Coder + SRE; auth/
 credentials/network → Security; DONE → QA always; visual assets → Designer),
 and DIP phase structure.
@@ -521,7 +521,9 @@ Solo mode applies when:
 - One or two humans are running the entire mandate pipeline, and
 - No independent agent session is available to act as QA without access to the Coder session's context and prior outputs.
 
-This is a proactive declaration, distinct from Error Mode E3 (which detects role collapse after the fact). Declare solo mode at the start of a mandate when role separation is structurally impossible.
+This is a proactive declaration, distinct from classifier detection of role
+collapse after the fact. Declare solo mode at the start of a mandate when role
+separation is structurally impossible.
 
 ### Required Compensating Controls
 
@@ -533,8 +535,6 @@ This is a proactive declaration, distinct from Error Mode E3 (which detects role
 
 4. **Declare solo mode in the DIP header.** Add an `Operating Mode:` field with value `solo` or `small-team (N humans)` so the context is visible to any reviewer reading the artifact chain.
 
-### Relationship to E3
+### Relationship to role collapse
 
-Error Mode E3 still applies in solo mode — the QA verdict remains `UNVERIFIED (self-review)` and Architect sign-off is required before `DONE`. The compensating controls above reduce the probability that the Architect review will surface errors that should have been caught during QA.
-
-See: `references/error-modes.md` — E3: Role Collapse
+Role collapse still applies in solo mode — the QA verdict remains `UNVERIFIED (self-review)` and Architect sign-off is required before `DONE`. The compensating controls above reduce the probability that the Architect review will surface errors that should have been caught during QA.

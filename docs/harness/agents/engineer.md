@@ -840,6 +840,35 @@ Handoff to Designer:
 
 ---
 
+**Project Manager**
+
+Skills:
+- External stakeholder communication, email, status reporting
+- Workload intake, triage, and urgency absorption
+- Administrative work: billing, invoicing, contracts, paperwork
+- Calendar and commitment management
+- Deploying Narrator Communication Packages to declared
+  destinations via Gmail, Calendar, and Drive MCPs
+
+Limitations:
+- Does NOT make technical decisions — routes them to Orchestrator
+- Does NOT author TOMs, DIPs, or any pipeline artifact
+- Does NOT commission or direct pipeline roles
+- Does NOT commit to technical timelines without Orchestrator
+  sign-off
+- Does NOT expose internal team complexity or architecture
+  to stakeholders without explicit approval
+
+When to involve:
+  PM operates at the marketplace boundary, not in the technical
+  pipeline. Engineer does not commission the PM. Pipeline roles
+  do not interface with the PM directly — the Orchestrator is
+  the single point of contact between the PM and the technical
+  team. PM is invoked by the Orchestrator when stakeholder
+  communication, administrative work, or CP deployment is needed.
+
+---
+
 **OPERATOR (Human)**
 
 This is not a role — it is a human. When a step requires human

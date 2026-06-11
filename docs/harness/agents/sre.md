@@ -125,6 +125,75 @@ The exemption file is automatically removed at session end by
 
 ---
 
+## Pass 0 — World model and failure classification
+
+This pass is unconditional. Execute before any
+reconnaissance, before any tool call, before any action.
+
+### Step 0a — Consult WORLD_MODEL.md
+
+Read WORLD_MODEL.md in full. Then search specifically:
+
+**## Failure Patterns**
+Match current symptoms against every documented pattern:
+  - Do the observable signals match?
+  - Does the vendor match?
+  - Does the layer match?
+
+If match found:
+  Declare it explicitly before proceeding:
+    "WORLD_MODEL.md match: {pattern name}
+     Documented tool: {tool}
+     Following documented procedure."
+  Execute the documented procedure.
+  Do not deviate without documenting the deviation.
+  If the documented procedure fails: encode the
+  failure as an update to the pattern entry.
+
+If no match found:
+  State: "No matching pattern in WORLD_MODEL.md.
+          Proceeding with reconnaissance."
+  Flag for encoding on resolution.
+
+**## Vendor Capabilities**
+Before concluding that a recovery path is unavailable,
+confirm what the vendor actually offers:
+  - Does the vendor have a virtual KVM or rescue mode?
+  - Does the vendor have a management console?
+  - Does the vendor have a support escalation path?
+
+The agent cannot access what it does not know exists.
+WORLD_MODEL.md ## Vendor Capabilities encodes
+non-obvious recovery tools per vendor.
+Check it before declaring a path unavailable.
+
+**## Known Edge Cases**
+Review all known edge cases for this vendor and
+infrastructure. Non-obvious operational facts that
+affect how this session should proceed.
+
+### Step 0b — Classify the failure mode
+
+Read framework/vendor/harnessable/references/error-modes.md.
+
+Before any action, classify the current failure:
+
+  Failure mode:   {mode name from error-modes.md}
+  Observable signals that match: {list}
+  Layer:          {where the cause lives}
+  Loop permitted: YES / NO
+  Prescribed response: {from error-modes.md}
+
+If the failure mode is not yet classifiable
+(insufficient signal), classify as UNRECOGNIZED_PATTERN
+and proceed with reconnaissance to gather signal.
+Re-classify after reconnaissance before acting.
+
+Do not proceed with action on a failure mode that
+declares Loop permitted: NO without human approval.
+
+---
+
 ## Pre-Change State Capture (mandatory Step 0)
 
 This step is mandatory before any system is touched.
@@ -384,6 +453,19 @@ Before closing the mandate, encode the resolution steps as a playbook.
 is an unencoded procedure that will need to be rediscovered next time.
 The playbook goes into the repo. The SIR references it.
 
+If the incident revealed a failure pattern, vendor capability, or
+edge case not already in `WORLD_MODEL.md`, update it before closing.
+This is a mandatory step — not optional cleanup. An incident that
+produced a new pattern and closed without encoding it is an
+unencoded procedure at the operational knowledge level.
+
+- Add a `### Pattern:` entry under `## Failure Patterns`
+- Add a record to `## Incident Index`
+- Add an entry to `docs/incidents/{YYYY-MM-DD}-{slug}.md`
+
+If no new pattern was discovered: note "no new pattern" in the SIR
+`## SRE Sign-Off` so the obligation is explicitly satisfied, not silently skipped.
+
 ### What constitutes degradation
 
 The baseline captured in Step 0 defines the comparison point. A service
@@ -393,6 +475,57 @@ now responding at 2000ms with 5% error rate, even if it is technically
 
 If the SRE continues applying changes when health checks are failing,
 that is a protocol violation. Stop. Assess. Decide. Do not continue.
+
+---
+
+## Post-resolution encoding obligation
+
+Before this mandate closes, answer:
+
+**Did this session reveal a pattern not in WORLD_MODEL.md?**
+
+A pattern is new if:
+  - The failure mode was not in ## Failure Patterns
+  - A vendor tool was discovered that is not in
+    ## Vendor Capabilities
+  - A non-obvious operational fact emerged that is
+    not in ## Known Edge Cases
+
+If YES — encode before closing. Not after. Not eventually.
+The session does not close until WORLD_MODEL.md is updated.
+
+Encoding format (copy into WORLD_MODEL.md ## Failure Patterns):
+
+```markdown
+### Pattern: {short descriptive name}
+
+  Vendor:     {vendor name or 'any'}
+  Layer:      {Hardware | Boot | OS | Network |
+               Service | Application | Auth}
+  Symptoms:   {observable signals at agent layer —
+               what the agent actually saw}
+  Cause:      {what actually caused it}
+  Diagnosis:  {how to confirm the cause}
+  Tool:       {what accessed the correct layer}
+  Procedure:
+    1. {step}
+    2. {step}
+    3. {step}
+  Prevention: {how to avoid this in future — optional}
+  Discovered: {YYYY-MM-DD}
+  Incident:   {docs/incidents/filename.md if filed}
+  Verified:   {YYYY-MM-DD}
+```
+
+Also update:
+  WORLD_MODEL.md ## Incident Index — one line entry
+  docs/incidents/ — full incident record if warranted
+
+**If NO** — state explicitly:
+  "No new patterns discovered. WORLD_MODEL.md
+   does not require update."
+
+This declaration is required either way.
 
 ---
 
@@ -587,6 +720,47 @@ with body {"status":"ok"}` is.
 
 A SIR reconstructed after the session from memory is not a valid SIR.
 The Change Execution Log must be written in real time.
+
+## Knowledge Extracted
+
+*Required. Complete before mandate closes.*
+*Silence is not permitted — declare YES or NO.*
+
+**New pattern discovered:** YES / NO
+
+---
+
+*Complete the YES branch if a failure pattern, vendor
+capability, or operational edge case was encountered
+that is not already in WORLD_MODEL.md.*
+
+### YES — Pattern details
+
+  Pattern name:    {short descriptive name for
+                    WORLD_MODEL.md entry}
+  Vendor:          {vendor name or 'any'}
+  Layer:           {Hardware | Boot | OS | Network |
+                    Service | Application | Auth}
+  Symptoms:        {observable signals at agent layer}
+  Cause:           {what actually caused it}
+  Diagnosis:       {how to confirm the cause}
+  Tool:            {what accessed the correct layer}
+  Procedure:
+    1. {step}
+    2. {step}
+  Prevention:      {optional — how to avoid in future}
+  Discovered:      {YYYY-MM-DD}
+
+  WORLD_MODEL.md updated:   YES — commit {SHA}
+  docs/incidents/ record:   {filed at path | deferred:
+                              reason}
+
+### NO — Explicit declaration
+
+  No new patterns discovered.
+  WORLD_MODEL.md does not require update.
+  Reason: {known pattern / no novel failure /
+           other}
 
 ---
 

@@ -65,6 +65,41 @@ identify -format "%wx%h %f\n" *.png
 xmllint --noout --schema /dev/null logo.svg 2>&1
 ```
 
+## Hallmark extension (when installed)
+
+When the Hallmark package is installed
+(packages/hallmark/PACKAGE.md present):
+
+  /hallmark           design execution with intelligence
+                      22 themes, 65-gate slop test,
+                      project memory, macrostructure
+                      selection — invoked instead of
+                      manual SVG authoring for UI work
+
+  /hallmark-study     design DNA extraction
+                      run BEFORE /hallmark when a
+                      reference design or brand exists
+
+  design.md           portable design system at project root
+                      locked by hallmark-study or hallmark
+                      all subsequent sessions defer to it
+
+When to use Hallmark vs base Designer tools:
+
+  New UI (page, component, hero)  → /hallmark
+  Reference design exists         → /hallmark-study first
+  Exact geometry (logo, icon)     → base tools (svgo,
+                                    cairosvg, Inkscape)
+  Favicon pipeline                → base tools
+  OG image from SVG spec          → base tools
+
+Check installation before invoking:
+  ls ~/.agents/skills/hallmark/SKILL.md
+  If absent: BLOCKER — run npx skills add nutlope/hallmark
+
+See packages/hallmark/adapter/designer_ext.md for
+the full protocol extension.
+
 ## Entry checklist
 
 - [ ] Read AGENTS.md (Voice, Locale, Risk Profile)
@@ -194,6 +229,10 @@ Filed in the TIR section. Required fields:
   Commit:        SHA of commit
   Deviations:    any deviation from spec with justification
   Open items:    anything not produced and why
+  Hallmark:      /hallmark used: YES / NO
+                 Slop gates: PASS / FAIL (65-gate)
+                 Macrostructure: {name if hallmark used}
+                 design.md: {path if locked | not locked}
 
 ## Framework Observation — RSI Obligation
 

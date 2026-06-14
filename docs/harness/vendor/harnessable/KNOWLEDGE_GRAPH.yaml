@@ -38,7 +38,8 @@ concepts:
     subclasses: [harnessable.DMT, harnessable.DIP, harnessable.TIR,
                  harnessable.SIR, harnessable.QAVerdict, harnessable.ADR,
                  harnessable.SRR, harnessable.CRR, harnessable.PIR,
-                 harnessable.EIR, harnessable.IB, harnessable.AssetPackage]
+                 harnessable.EIR, harnessable.IB, harnessable.AssetPackage,
+                 harnessable.EvolutionReport]
     properties:
       append_only: true
       requires_predecessor: true
@@ -55,7 +56,7 @@ concepts:
                  harnessable.Security, harnessable.Reviewer,
                  harnessable.Inspector, harnessable.EmergencyResponder,
                  harnessable.Analyst, harnessable.Designer,
-                 harnessable.ProjectManager]
+                 harnessable.ProjectManager, harnessable.Evolver]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -280,9 +281,10 @@ concepts:
     world_model_consultation:
       pass: 0 (first, unconditional)
       searches:
-        - WORLD_MODEL.md ## Failure Patterns
-        - WORLD_MODEL.md ## Vendor Capabilities
-        - WORLD_MODEL.md ## Known Edge Cases
+        - world_models/*_world_model.md failure patterns
+        - world_models/*_world_model.md vendor capabilities
+        - world_models/*_world_model.md known edge cases
+        - WORLD_MODEL.md discovery index and cross-repo pointers
       if_match: declare explicitly, follow documented procedure
       if_no_match: proceed with recon, flag for encoding
     failure_classification:
@@ -295,8 +297,8 @@ concepts:
         human approval
     encoding_obligation:
       timing: before mandate closes (not after, not eventually)
-      trigger: any pattern not already in WORLD_MODEL.md
-      format: WORLD_MODEL.md ## Failure Patterns entry
+      trigger: any pattern not already in world_models/
+      format: world_models/{domain}_world_model.md pattern entry
       declaration_required: YES (even when no new pattern)
 
   harnessable.QA:
@@ -556,19 +558,21 @@ concepts:
       provider:   anthropic | openai | google | cisco | local | other
       cost_tier:  low | medium | high
       rationale:  justification for this model for this role
-    roles_declared: 15
+    roles_declared: 16
 
   harnessable.SquadReference:
     type: concept
+    deprecated: true
+    superseded_by: harnessable.RosterScan
     definition: >
-      The section of the Engineer protocol declaring the capability
-      surface, hard limitations, commissioning criteria, DIP step
-      labels, and handoff requirements for all 13 framework roles.
-      Ensures multi-role DIP decomposition is framework-prescribed
-      rather than emergent. Security is a mandatory decomposition
-      trigger for auth, credentials, and network surface changes.
-    encoded_in: framework/agents/engineer.md ## Squad Reference
-    role_count: 15
+      Former static section in engineer.md listing all role profiles
+      inline. Replaced by the Role Roster dynamic protocol: the
+      Engineer now scans docs/harness/agents/*.md on every invocation
+      rather than reading a cached profile table. The role profiles
+      live in individual agent files; the Engineer reads them from
+      disk, not from a snapshot in the Engineer protocol.
+    was_encoded_in: framework/agents/engineer.md ## Squad Reference
+    now_encoded_in: framework/agents/engineer.md ## Role Roster
     mandatory_triggers:
       - code_changes_plus_live_operations → Coder + SRE
       - auth_credentials_network_surface  → Security mandatory
@@ -643,35 +647,176 @@ concepts:
       Human approves each loop iteration via board state.
       No max_iterations cap — Architect decides when to escalate.
 
-  harnessable.WorldModel:
-    type: harnessable.Artifact
-    label: World Model
+  harnessable.WorldModelDirectory:
+    type: concept
     definition: >
-      Project-level operational knowledge base. Encodes
-      what the world looks like from this project —
-      vendor capabilities, infrastructure topology,
-      failure patterns discovered in production, known
-      edge cases. Lives at the project root alongside
-      AGENTS.md, outside docs/harness/, so the framework
-      is swappable without losing accumulated knowledge.
-      Every resolved incident that reveals a new pattern
-      must update WORLD_MODEL.md before the mandate closes.
-    path_convention: WORLD_MODEL.md (project root)
-    template: framework/templates/world-model.md
+      A directory of domain-specific world model files.
+      Each file models one operational domain precisely
+      using the *_world_model.md naming convention.
+      Replaces the single WORLD_MODEL.md approach which
+      cannot model something as complex as a fleet
+      application's operational world. The same lesson
+      as agents/*.md — one file trying to hold everything
+      grows unbounded and becomes incoherent.
+    path_convention: world_models/*_world_model.md
+    discovery: find world_models/ -name "*_world_model.md"
+    pointer_syntax: >
+      → world_models/domain_world_model.md
+      → ../other-repo/world_models/domain_world_model.md
+    index: WORLD_MODEL.md (thin discovery index at root)
+    security: >
+      Must be in a PRIVATE repository.
+      Real IPs, node names, and service topology
+      in a public repo are a security incident.
+    seed_templates:
+      - framework/templates/world_models/fleet_world_model.md
+      - framework/templates/world_models/vendor_world_model.md
+      - framework/templates/world_models/staging_world_model.md
+
+  harnessable.DomainWorldModel:
+    type: harnessable.Artifact
+    label: Domain World Model
+    definition: >
+      A single world model file scoped to one
+      operational domain. Bounded, coherent, focused.
+      Agents read only the domain files relevant to
+      their mandate. New domains add new files.
+      Files may point to world models in other
+      private fleet repositories.
+    naming_convention: "{domain}_world_model.md"
+    path_convention: world_models/{domain}_world_model.md
     project_owned: true
     framework_never_modifies: true
-    sections:
-      - Infrastructure Topology
-      - Vendor Capabilities
-      - Failure Patterns
-      - Service Dependencies
-      - Known Edge Cases
-      - Incident Index
-    update_obligation: >
-      Mandatory after every incident that reveals a
-      pattern not previously encoded. Filed before
-      mandate closure. SIR ## Knowledge Extracted
-      section declares the update.
+    pointer_graph: distributed across private fleet repos
+    domain_examples:
+      - fleet (topology, service graph, trust boundaries)
+      - vendor (capabilities, recovery tools)
+      - staging (staging-specific topology and edge cases)
+      - oauth (complete auth flow across fleet)
+      - tenant (isolation model, blast radius)
+      - billing (payment states, activation flows)
+      - api (contract surface, quota limits)
+
+  harnessable.RosterScan:
+    type: concept
+    definition: >
+      The first action of every Engineer invocation.
+      Scans docs/harness/agents/*.md and project package
+      adapters to discover the current generation of the
+      framework's capability surface. The roster is what
+      exists on disk — not what any document says, not
+      what was true at install time. New roles appear
+      here first. Deprecated roles disappear from here.
+      Package skills may extend the roster without
+      becoming framework roles. The Engineer that plans
+      from a cached mental model plans from a previous
+      generation.
+    command: ls docs/harness/agents/*.md
+    package_adapter_commands:
+      - ls packages/*/PACKAGE.md
+      - ls packages/*/skills/*.md
+    timing: before reading mandate, before planning,
+            before authoring DIP
+    for_each_file:
+      - read ## Role Scope (Reach and Hard limits)
+      - understand when to commission this role
+      - if unseen before: read full file before planning
+    package_adapter_scan:
+      - read PACKAGE.md
+      - read harnessable: block if present
+      - note package skills, role extensions, Rubric additions,
+        and world model templates
+    gap_detection: >
+      After scan, map every mandate step to an
+      available role. Steps with no role match
+      or package skill match trigger a Protocol
+      Enhancement Request.
+
+  harnessable.PackageAdapter:
+    type: concept
+    label: Package Adapter
+    definition: >
+      A project-local governance bridge at packages/{name}/
+      that wraps an installed third-party package in
+      harnessable conventions without copying or owning
+      the package. Discovered by the Engineer during
+      roster scan. May declare role extensions, Rubric
+      additions, package skills, and world model templates.
+    path_convention: packages/{name}/
+    manifest: packages/{name}/PACKAGE.md
+    project_owned: true
+    framework_never_modifies: true
+    not_a_framework_role: true
+    discovered_by: harnessable.Engineer
+    discovery_commands:
+      - ls packages/*/PACKAGE.md
+      - ls packages/*/skills/*.md
+
+  harnessable.PackageSkill:
+    type: concept
+    label: Package Skill
+    definition: >
+      A command wrapper declared by a Package Adapter.
+      Invokes installed third-party domain expertise
+      inside a governed harnessable session. May appear
+      in the Execution Manifest when the adapter's
+      harnessable declaration covers a mandate step.
+    path_convention: packages/{name}/skills/*.md
+    declared_by: harnessable.PackageAdapter
+    may_appear_in: harnessable.ExecutionManifest
+    not_a_framework_role: true
+
+  harnessable.ExecutionManifest:
+    type: harnessable.Artifact
+    label: Execution Manifest
+    definition: >
+      An explicit ordered sequence of agent invocation
+      commands included in every DIP. Makes the DIP
+      fully self-contained — the operator reads once
+      and knows exactly what to run in what order.
+      No interpretation required. Resume point is
+      clear after any failure.
+    format: "N) /role-name path/to/dip.md"
+    location: ## Execution Manifest section of DIP
+    authored_by: harnessable.Engineer
+    gap_notation: >
+      N) [GAP] — PER filed: docs/mandates/per/PER-NNN.md
+      Used when a manifest step has no available role.
+    rules:
+      - one line per agent session
+      - role must exist in docs/harness/agents/
+      - order reflects execution dependency
+      - QA always follows the role it verifies
+      - SRE deployment follows Coder implementation
+
+  harnessable.ProtocolEnhancementRequest:
+    type: harnessable.Artifact
+    label: Protocol Enhancement Request
+    abbreviation: PER
+    definition: >
+      Filed by the Engineer when a roster scan reveals
+      no existing role that covers a mandate step.
+      The Engineer holds the complete picture: what
+      needs doing AND what the framework can currently
+      do. The delta is the enhancement signal. No
+      other agent has this vantage point. PERs are
+      high-signal Dreamer corpus input. The Evolver
+      acts on recurring PER patterns.
+    path_convention: docs/mandates/per/PER-{NNN}.md
+    filed_by: harnessable.Engineer
+    read_by: harnessable.Dreamer (high-signal corpus)
+    actioned_by: harnessable.Evolver
+    template: framework/templates/per.md
+    status_values:
+      - OPEN
+      - RESOLVED (new role created or mutation applied)
+      - DECLINED (gap does not warrant a role)
+    loop: >
+      Engineer files PER (gap detected)
+      Dreamer reads PERs across fleet (pattern)
+      Evolver decides: new role / mutation / decline
+      New role appears in docs/harness/agents/
+      Engineer scans roster — gap is gone
 
   harnessable.IncidentRecord:
     type: harnessable.Artifact
@@ -692,7 +837,7 @@ concepts:
       - Discovery Path
       - Resolution
       - Knowledge Extracted
-      - WORLD_MODEL.md update
+      - world_models/ update
 
   harnessable.FailureMode:
     type: concept
@@ -758,7 +903,7 @@ concepts:
       - fresh_context: no shared contamination
       - stop_authority: unconditional
       - reads: error-modes.md
-      - reads: WORLD_MODEL.md failure patterns
+      - reads: world_models/*_world_model.md failure patterns
       - observes: programmatic signals (Layer 1)
       - observes: model behaviour signals (Layer 2)
     instantiations:
@@ -787,17 +932,18 @@ concepts:
       failure. Symptoms manifest at the observable layer
       while the cause lives below it. Agent capability
       is not the limitation — pattern recognition is.
-      If the pattern exists in WORLD_MODEL.md the agent
-      can execute recovery autonomously. If not, no
-      amount of retrying at the observable layer will
-      reveal a below-horizon cause.
+      If the pattern exists in a relevant
+      world_models/*_world_model.md file the agent can
+      execute recovery autonomously. If not, no amount
+      of retrying at the observable layer will reveal a
+      below-horizon cause.
     layers:
       below_horizon: Hardware, Firmware, Bootloader, Kernel
       agent_layer:   OS, Network, Services, Application
       model_layer:   Model reasoning, back-pressure signals
     failure_mode: BELOW_HORIZON (see error-modes.md)
     resolution: >
-      Check WORLD_MODEL.md for matching pattern.
+      Search world_models/ for a matching pattern.
       If match: execute documented recovery.
       If no match: package observable state,
       request lower-layer access, stop.
@@ -1245,8 +1391,8 @@ concepts:
       branches:
         YES: >
           Full pattern encoding matching
-          WORLD_MODEL.md ## Failure Patterns format.
-          WORLD_MODEL.md update confirmed with commit SHA.
+          world_models/{domain}_world_model.md pattern format.
+          world_models/ update confirmed with commit SHA.
         NO: >
           Explicit declaration required.
           Silence is not permitted.
@@ -1420,13 +1566,13 @@ concepts:
       note: >
         If the failure required Emergency protocol,
         ask whether the pattern should have been in
-        WORLD_MODEL.md. If yes: this section prevents
+        world_models/. If yes: this section prevents
         recurrence.
       branches:
         YES: >
           Full pattern encoding matching
-          WORLD_MODEL.md ## Failure Patterns format.
-          WORLD_MODEL.md update confirmed with commit SHA.
+          world_models/{domain}_world_model.md pattern format.
+          world_models/ update confirmed with commit SHA.
         NO: >
           Explicit declaration required.
           Silence is not permitted.
@@ -2047,3 +2193,152 @@ concepts:
       - "tail {file}"
       - "echo $VAR"
       - "printenv"
+
+  harnessable.Evolver:
+    type: harnessable.IndependentRole
+    definition: >
+      Acts on what the Dreamer named. Reads accumulated
+      Dream Reports and open Protocol Enhancement
+      Requests and applies natural selection to the
+      current roster generation. Creates roles the
+      corpus shows are needed. Mutates protocols the
+      evidence shows are wrong. Merges roles that prove
+      redundant. Deprecates roles that no longer fit.
+      Extinccts roles the fleet has stopped using.
+      The framework's fitness function made executable.
+      Does not read raw corpus — only Dream Reports
+      and PERs. One tool, one job.
+    inputs:
+      primary:
+        - Dream Reports (docs/dreams/DR-*.md)
+        - Protocol Enhancement Requests
+          (docs/mandates/per/PER-*.md)
+      boundary: last_evolution.json
+    trigger: signal density (N Dream Reports OR
+              M consecutive patterns OR
+              PER backlog threshold)
+    evolution_actions:
+      - CREATE (new role)
+      - MUTATE (existing role protocol)
+      - MERGE (two roles into one)
+      - DEPRECATE (mark end-of-life)
+      - EXTINCT (remove from roster)
+    produces: harnessable.EvolutionReport
+    executes: Evolution collapse (last_evolution.json)
+    resolves: harnessable.ProtocolEnhancementRequest
+
+  harnessable.EvolutionReport:
+    type: harnessable.Artifact
+    label: Evolution Report
+    abbreviation: ER
+    path_convention: docs/evolutions/ER-{NNN}.md
+    produced_by: harnessable.Evolver
+    consumed_by: harnessable.Orchestrator
+    sections:
+      - Roster diff (before/after)
+      - Actions taken (CREATE/MUTATE/MERGE/DEPRECATE/EXTINCT)
+      - PER resolutions
+      - Signals deferred
+      - Signals to watch
+    failure_mode: >
+      Evolution without collapse = Dream Reports
+      accumulate as EVOLVED debt.
+      Action without sufficient evidence = noise
+      in the roster.
+
+  harnessable.EvolutionAction:
+    type: concept
+    definition: >
+      One of five actions the Evolver applies to
+      the roster based on pattern evidence from
+      Dream Reports and PERs.
+    actions:
+      CREATE:
+        evidence: 3+ PERs or Dream Reports
+        produces: new framework/agents/{name}.md
+      MUTATE:
+        evidence: 3+ sessions with wrong outcomes
+        produces: updated framework/agents/{role}.md
+      MERGE:
+        evidence: two roles always commissioned together
+        produces: survivor file, extinct merged file
+      DEPRECATE:
+        evidence: role not commissioned in 3+ Dream cycles
+        produces: deprecation notice at top of agent file
+      EXTINCT:
+        evidence: prior deprecation period elapsed
+        produces: role removed from roster
+    threshold_principle: >
+      A single PER or Dream Report is noise.
+      The same signal across 3+ instances is a pattern.
+      The same pattern across 5+ instances is a defect.
+      Only patterns warrant Evolution actions.
+
+  harnessable.Package:
+    type: concept
+    definition: >
+      A third-party tool, skill, or library that
+      provides domain expertise to harnessable-governed
+      pipelines. Lives where installed — harnessable
+      never copies or modifies it. Connected to
+      harnessable via a PackageAdapter that provides
+      discovery, governance bridge, and Rubric
+      integration without touching the package itself.
+    lives_at: install_path (declared in PACKAGE.md)
+    connected_via: harnessable.PackageAdapter
+    examples:
+      - hallmark (design execution + slop gates)
+      - playwright (browser testing)
+      - terraform (infrastructure tooling)
+    principle: >
+      The package provides domain expertise.
+      harnessable provides governance.
+      Neither needs to know the other's internals.
+
+  harnessable.PackageManifest:
+    type: harnessable.Artifact
+    label: Package Manifest
+    abbreviation: PACKAGE.md
+    definition: >
+      Declares what a package adapter wraps and what
+      it contributes to the harnessable pipeline.
+      Required in every packages/{name}/ directory.
+      The harnessable: block is read by the Engineer
+      during roster scan to discover skills, role
+      extensions, and Rubric additions.
+    path_convention: packages/{name}/PACKAGE.md
+    template: framework/templates/package.md
+    required_fields:
+      - name
+      - source
+      - install_path
+      - capabilities
+      - harnessable.extends_role
+      - harnessable.adds_skills
+      - harnessable.requires
+
+  harnessable.HallmarkAdapter:
+    type: harnessable.PackageAdapter
+    label: Hallmark Adapter
+    definition: >
+      The inaugural harnessable package adapter.
+      Governance bridge for Hallmark — anti-AI-slop
+      design skill by Nutlope / Together AI. Provides
+      /hallmark and /hallmark-study skill wrappers,
+      Designer role extension, 65-gate slop Rubric,
+      and design domain world model template. Hallmark
+      lives at ~/.agents/skills/hallmark/ — the adapter
+      at packages/hallmark/ does not copy it.
+    package: Hallmark (nutlope/hallmark)
+    install_cmd: npx skills add nutlope/hallmark
+    extends_role: harnessable.Designer
+    adds_skills:
+      - /hallmark (design execution)
+      - /hallmark-study (DNA extraction)
+    rubric: packages/hallmark/adapter/rubric.md
+    corpus_input: .hallmark/log.json
+    world_model: packages/hallmark/adapter/design_world_model.md
+    principle: >
+      Hallmark provides design intelligence.
+      harnessable provides governance.
+      The adapter bridges without copying.

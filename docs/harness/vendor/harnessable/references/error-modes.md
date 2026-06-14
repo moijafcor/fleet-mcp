@@ -142,9 +142,10 @@ Definition:
   at a lower layer because the symptom pattern has not
   been matched to its cause layer.
 
-  If the pattern exists in WORLD_MODEL.md, the agent
-  CAN execute the recovery autonomously. If not, the
-  agent cannot know what it doesn't know.
+  If the pattern exists in a relevant
+  world_models/*_world_model.md file, the agent CAN
+  execute the recovery autonomously. If not, the agent
+  cannot know what it doesn't know.
 
 Observable signals:
   - Persistent failure at the observable layer
@@ -168,8 +169,8 @@ Prescribed response:
     provider console, physical access)
   Stop all action until lower-layer access granted.
 
-  First check WORLD_MODEL.md ## Failure Patterns
-  for matching symptom pattern before escalating.
+  First search world_models/ for a matching symptom
+  pattern before escalating.
   If match found: execute the documented recovery path.
   If no match: escalate, then encode discovery on resolution.
 

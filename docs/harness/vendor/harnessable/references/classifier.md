@@ -151,15 +151,15 @@ at layer 2. The limitation is pattern recognition —
 the agent does not know to look below its horizon
 because the symptom pattern has not been matched to
 its cause layer.
-If the pattern exists in WORLD_MODEL.md ## Failure
-Patterns, the agent can execute the recovery autonomously
-once it recognises the match. If the pattern does not
-exist, no amount of retrying at the observable layer
-will reveal a cause that lives below it.
+If the pattern exists in a relevant
+`world_models/*_world_model.md` file, the agent can execute
+the recovery autonomously once it recognises the match.
+If the pattern does not exist, no amount of retrying at
+the observable layer will reveal a cause that lives below it.
 
 Classifier response to BELOW_HORIZON:
   Do not retry at the observable layer.
-  Check WORLD_MODEL.md for matching pattern.
+  Search world_models/ for a matching pattern.
   If match: route to documented recovery path.
   If no match: package observable state and escalate.
 

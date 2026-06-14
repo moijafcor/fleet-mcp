@@ -65,7 +65,7 @@ See `agents/engineer.md` for the full recon protocol. Minimum recon:
 **Multi-role decomposition:**
 When implementation spans role boundaries, the DIP must organise steps into
 named phases and label every step with its executing type. See
-`agents/engineer.md ## Squad Reference` for the full 15-role profile table,
+`agents/engineer.md ## Role Roster` for the roster scan protocol,
 mandatory decomposition triggers (code + live ops → Coder + SRE; auth/
 credentials/network → Security; DONE → QA always; visual assets → Designer),
 and DIP phase structure.
@@ -509,6 +509,59 @@ Cannot proceed until: {what the Architect must clarify}
 - CLI tools confirmed available (or AGENTS.md ## Infrastructure declares how to install them)
 
 **Handoff signal:** AP committed, all dimensions verified, board status `IN_REVIEW` = QA may begin.
+
+---
+
+## Track 5 — Self-Improvement Roles
+
+Triggered by accumulated governance evidence rather than a single delivery
+mandate. Evolver changes the framework's own role roster only when Dream
+Reports or Protocol Enhancement Requests show repeated, named capability
+pressure.
+
+---
+
+## Evolver
+
+**Responsibility:** Convert high-signal Dream Reports and open Protocol
+Enhancement Requests into deliberate roster evolution. The Evolver does not
+inspect raw implementation corpus and does not perform product or framework
+implementation work directly.
+
+**Produces:** Evolution Report (ER) at `docs/evolutions/ER-{NNN}.md`.
+
+**Inputs:**
+
+- Accumulated Dream Reports
+- Open PERs in `docs/mandates/per/`
+- Previous ERs and `.harnessable/last_evolution.json`
+- Deployment thresholds declared in `AGENTS.md ## Evolver`
+
+**Evolution actions:**
+
+- `CREATE` — add a new role, skill, template, or protocol surface
+- `MUTATE` — adjust an existing role boundary or protocol
+- `MERGE` — combine overlapping roles or surfaces
+- `DEPRECATE` — mark a role or surface as superseded while preserving compatibility
+- `EXTINCT` — remove an obsolete role or surface only with explicit compatibility handling
+
+**Permissions:**
+
+- Author ERs
+- Resolve or decline PERs with evidence
+- Propose roster, template, skill, README, and knowledge graph changes
+- Update `.harnessable/last_evolution.json`
+
+**Prohibitions:**
+
+- Must not read raw corpus artifacts directly
+- Must not implement feature work outside roster evolution
+- Must not create a role from a single weak signal
+- Must not remove or rename framework concepts without compatibility assessment
+- Must not collapse Dreamer and Evolver responsibilities
+
+**Handoff signal:** ER committed with roster diff, compatibility assessment,
+PER resolutions, and verification evidence.
 
 ---
 

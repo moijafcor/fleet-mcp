@@ -39,7 +39,7 @@ concepts:
                  harnessable.SIR, harnessable.QAVerdict, harnessable.ADR,
                  harnessable.SRR, harnessable.CRR, harnessable.PIR,
                  harnessable.EIR, harnessable.IB, harnessable.AssetPackage,
-                 harnessable.EvolutionReport]
+                 harnessable.EvolutionReport, harnessable.DreamReport]
     properties:
       append_only: true
       requires_predecessor: true
@@ -56,7 +56,8 @@ concepts:
                  harnessable.Security, harnessable.Reviewer,
                  harnessable.Inspector, harnessable.EmergencyResponder,
                  harnessable.Analyst, harnessable.Designer,
-                 harnessable.ProjectManager, harnessable.Evolver]
+                 harnessable.ProjectManager, harnessable.Evolver,
+                 harnessable.Dreamer]
     constraints:
       - no_self_approval: true
         note: No Role may verify or accept work it produced.
@@ -558,7 +559,7 @@ concepts:
       provider:   anthropic | openai | google | cisco | local | other
       cost_tier:  low | medium | high
       rationale:  justification for this model for this role
-    roles_declared: 16
+    roles_declared: 17
 
   harnessable.SquadReference:
     type: concept
@@ -2273,6 +2274,71 @@ concepts:
       The same signal across 3+ instances is a pattern.
       The same pattern across 5+ instances is a defect.
       Only patterns warrant Evolution actions.
+
+  harnessable.Dreamer:
+    type: harnessable.IndependentRole
+    definition: >
+      Runs when the framework feels the weight of
+      unprocessed experience. Reads the artifact buffer
+      since last collapse, extracts signal, promotes to
+      permanent knowledge, collapses the buffer. Single
+      function: distillation only. Does not create,
+      mutate, or deprecate roles — that belongs to the
+      Evolver. One tool, one job.
+    sleep_modes:
+      nap:  light, recent burst, partial collapse
+      full: deep, complete buffer, full collapse
+      debt: emergency triage, critical accumulation
+    trigger: signal density (debt_ratio), not schedule
+    produces: harnessable.DreamReport
+    executes: harnessable.CollapseEvent
+    hands_patterns_to: harnessable.Evolver
+
+  harnessable.DreamReport:
+    type: harnessable.Artifact
+    label: Dream Report
+    abbreviation: DR
+    path_convention: docs/dreams/DR-{NNN}.md
+    produced_by: harnessable.Dreamer
+    consumed_by: harnessable.Evolver
+    sections:
+      - Corpus findings (frequency table, delta,
+        contradictions, urgent flags)
+      - Promotions executed
+      - For Evolver (roster action candidates)
+    failure_mode: >
+      Collapse not executed = debt accumulates.
+      No promotion = tokens burned, nothing changed.
+
+  harnessable.CollapseEvent:
+    type: concept
+    definition: >
+      The reset following a Dream. Artifacts marked
+      DREAMED, signals promoted to permanent knowledge,
+      last_collapse.json written, buffer reset to zero.
+      Without collapse, each Dream reads the entire
+      history — signal-to-noise degrades every cycle.
+    artifacts:
+      last_collapse.json: >
+        Written after every collapse. Defines the
+        buffer boundary for the next Dream.
+
+  harnessable.SleepDebt:
+    type: concept
+    definition: >
+      Ratio of unprocessed artifacts to the collapse
+      threshold. Measures how urgently the Dreamer
+      needs to run. Calculated by debt_monitor.py.
+    formula: >
+      debt_ratio = artifacts_since_collapse /
+                   collapse_threshold
+    thresholds:
+      healthy:   0.0 — 0.3
+      nap:       0.3 — 0.7
+      full:      0.7 — 1.5
+      critical:  1.5 — 3.0
+      emergency: 3.0+
+    monitored_by: framework/tools/debt_monitor.py
 
   harnessable.Package:
     type: concept

@@ -515,9 +515,53 @@ Cannot proceed until: {what the Architect must clarify}
 ## Track 5 — Self-Improvement Roles
 
 Triggered by accumulated governance evidence rather than a single delivery
-mandate. Evolver changes the framework's own role roster only when Dream
-Reports or Protocol Enhancement Requests show repeated, named capability
-pressure.
+mandate. The Dreamer distils what the fleet experienced into permanent
+knowledge. The Evolver acts on what the Dreamer named. Together they form
+the framework's self-improvement loop.
+
+---
+
+## Dreamer
+
+**Responsibility:** Read the artifact buffer accumulated since the last
+collapse, extract recurring signals invisible to individual sessions, promote
+them to permanent knowledge (world_models/, KNOWLEDGE_GRAPH, error-modes.md),
+write a Dream Report, and execute a collapse — resetting the buffer boundary
+so the next Dream starts fresh.
+
+**Produces:** Dream Report (DR) at `docs/dreams/DR-{NNN}.md`.
+
+**Inputs:**
+
+- All artifacts newer than `.harnessable/last_collapse.json`
+- HARNESS_IMPROVEMENT tags, Framework Observations, Knowledge Extracted
+  sections, PERs
+- Deployment thresholds declared in `AGENTS.md ## Dreamer`
+
+**Sleep modes:**
+
+- `nap` — light scan, recent burst window only, partial collapse
+- `full` — complete buffer scan since last collapse, full collapse
+- `debt` — emergency triage, highest signal density first, full collapse
+
+**Permissions:**
+
+- Read artifact buffer across all deployments in scope
+- Promote signals to world_models/, KNOWLEDGE_GRAPH, error-modes.md
+- Write Dream Report and execute collapse
+- Write `.harnessable/last_collapse.json`
+
+**Prohibitions:**
+
+- Must not create, mutate, or deprecate roles
+- Must not implement mandates
+- Must not act on urgency — flags URGENT in the Dream Report and stops
+- Must not read artifacts beyond the last_collapse.json boundary
+- Must not share context with active agent sessions
+
+**Handoff signal:** DR committed with frequency table, promotions executed,
+and last_collapse.json written. "For Evolver" section in DR names patterns
+warranting roster action.
 
 ---
 

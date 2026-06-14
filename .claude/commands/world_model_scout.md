@@ -173,7 +173,7 @@ Rules:
   FOUND content → fill with confidence
   INFERRED content → fill with # INFERRED: prefix
   Unknown content → leave as REPLACE marker
-  IPs and credentials → REPLACE (never fill from .env)
+  IPs and credentials → REPLACE (never fill from secret files)
 
 ### fleet_world_model.md population
 

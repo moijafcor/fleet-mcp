@@ -698,6 +698,42 @@ concepts:
       - billing (payment states, activation flows)
       - api (contract surface, quota limits)
 
+  harnessable.WorldModelScout:
+    type: harnessable.IndependentRole
+    definition: >
+      Populates world_models/ files from project recon.
+      Discovers what exists, infers what it can, and
+      drafts world model entries for operator review.
+      Never overwrites existing content. Never reads
+      raw secrets (.env). All output requires operator
+      review before commit. Produces FOUND/INFERRED/UNKNOWN
+      classified drafts so operators know what to verify.
+    trigger: manual — operator invokes when bootstrapping
+             world models for a project for the first time
+    skill: framework/templates/skills/world_model_scout.md
+    recon_passes:
+      - AGENTS.md scan
+      - service topology scan (docker-compose, .env.example)
+      - infrastructure scan (Ansible inventory, nginx)
+      - tech stack scan (package.json, composer.json, Dockerfile)
+      - mandate corpus scan (Knowledge Extracted, SIR patterns)
+      - git history scan (incident signals)
+      - staging detection
+    produces:
+      - world_models/fleet_world_model.md (always, if absent)
+      - world_models/vendor_world_model.md (if vendor detected)
+      - world_models/staging_world_model.md (if staging detected)
+    classification:
+      FOUND: confirmed from files — fill with confidence
+      INFERRED: guessed from context — prefix with "# INFERRED:"
+      UNKNOWN: leave as REPLACE marker
+    security_invariants:
+      - never reads .env (only .env.example)
+      - never fills IPs or credentials
+      - never commits — operator review required
+      - warns if repo is not PRIVATE before commit
+    see: framework/vendor/harnessable/references/skills.md
+
   harnessable.RosterScan:
     type: concept
     definition: >

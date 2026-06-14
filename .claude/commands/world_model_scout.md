@@ -19,11 +19,13 @@ You never overwrite existing content. You never read secrets.
   ls "$DEPLOYMENT/AGENTS.md" \
     || echo "WARN: no AGENTS.md — confirm target"
 
-  # What world model files already exist?
+# What world model files already exist?
+
   find "$DEPLOYMENT/world_models" \
     -name "*_world_model.md" 2>/dev/null | sort
 
-  # What world model templates are available?
+# What world model templates are available?
+
   ls docs/harness/templates/world_models/ 2>/dev/null \
     || ls ~/.claude/commands/ | grep world_model
 
@@ -35,6 +37,7 @@ Execute each scan. Record findings before writing anything.
 Label each finding: FOUND (confirmed) or INFERRED (guessed).
 
 ### 1. AGENTS.md scan
+
   cat "$DEPLOYMENT/AGENTS.md" 2>/dev/null
 
   Extract:
@@ -44,11 +47,14 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     Any existing world model pointer
 
 ### 2. Service topology scan
-  # docker-compose
+
+# docker-compose
+
   cat "$DEPLOYMENT/docker-compose.yml" 2>/dev/null
   cat "$DEPLOYMENT/docker-compose.*.yml" 2>/dev/null
 
-  # Laravel / Django / FastAPI config
+# Laravel / Django / FastAPI config
+
   cat "$DEPLOYMENT/.env.example" 2>/dev/null
   cat "$DEPLOYMENT/config/database.php" 2>/dev/null
   cat "$DEPLOYMENT/config/services.php" 2>/dev/null
@@ -60,7 +66,9 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     External service dependencies
 
 ### 3. Infrastructure scan
-  # Ansible
+
+# Ansible
+
   find "$DEPLOYMENT" -name "inventory*" \
     -not -path "*/.git/*" 2>/dev/null \
     | head -5 | xargs cat 2>/dev/null
@@ -69,7 +77,8 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     -not -path "*/.git/*" 2>/dev/null \
     | head -3 | xargs cat 2>/dev/null
 
-  # nginx
+# nginx
+
   find "$DEPLOYMENT" -name "nginx.conf" \
     -not -path "*/.git/*" 2>/dev/null \
     | head -3 | xargs cat 2>/dev/null
@@ -80,7 +89,9 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     Vendor hints (Hetzner, AWS, GCP, DO, Vultr)
 
 ### 4. Tech stack scan
-  # Node / PHP / Python
+
+# Node / PHP / Python
+
   cat "$DEPLOYMENT/package.json" 2>/dev/null \
     | python3 -m json.tool 2>/dev/null | head -20
   cat "$DEPLOYMENT/composer.json" 2>/dev/null \
@@ -95,19 +106,23 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     Key dependencies that reveal architecture
 
 ### 5. Mandate corpus scan
-  # Knowledge Extracted sections — gold
+
+# Knowledge Extracted sections — gold
+
   grep -r "Knowledge Extracted" \
     "$DEPLOYMENT/docs/mandates/" \
     --include="*.md" -l 2>/dev/null \
     | head -10 \
     | xargs grep -A 30 "Knowledge Extracted" 2>/dev/null
 
-  # HARNESS_IMPROVEMENT tags
+# HARNESS_IMPROVEMENT tags
+
   grep -r "HARNESS_IMPROVEMENT" \
     "$DEPLOYMENT/docs/mandates/" \
     --include="*.md" 2>/dev/null | head -20
 
-  # SIR/EIR files — failure patterns
+# SIR/EIR files — failure patterns
+
   find "$DEPLOYMENT/docs/mandates" \
     -name "*.md" 2>/dev/null \
     | xargs grep -l "SIR\|SRE Implementation\|Emergency Incident" 2>/dev/null \
@@ -115,7 +130,8 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     | xargs grep -A 20 "## Pattern\|Root cause\|Failure" 2>/dev/null \
     | head -60
 
-  # docs/incidents/ records
+# docs/incidents/ records
+
   find "$DEPLOYMENT/docs/incidents" \
     -name "*.md" 2>/dev/null \
     | head -5 | xargs cat 2>/dev/null
@@ -127,6 +143,7 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     Infrastructure lessons
 
 ### 6. Git history scan
+
   git -C "$DEPLOYMENT" log --oneline -30 2>/dev/null
   git -C "$DEPLOYMENT" log --oneline \
     --all --grep="SRE\|incident\|hotfix\|rollback" \
@@ -137,6 +154,7 @@ Label each finding: FOUND (confirmed) or INFERRED (guessed).
     Infrastructure change patterns
 
 ### 7. Staging detection
+
   grep -r "staging\|thor\|vm\|KVM\|vagrant\|192\.168\." \
     "$DEPLOYMENT/AGENTS.md" \
     "$DEPLOYMENT/.env.example" \
@@ -177,14 +195,21 @@ Rules:
 
 ### fleet_world_model.md population
 
-  ## Fleet Topology → from docker-compose services,
+## Fleet Topology → from docker-compose services
+
     AGENTS.md declarations, tech stack scan
-  ## Service Dependency Graph → from .env.example
+
+## Service Dependency Graph → from .env.example
+
     DB_HOST, REDIS_URL, API_URL patterns
-  ## Data Flow → infer from service topology
-  ## Trust Boundaries → infer from service roles
-  ## Deployment Order → infer from dependencies
-  ## Shared Infrastructure → from AGENTS.md
+
+## Data Flow → infer from service topology
+
+## Trust Boundaries → infer from service roles
+
+## Deployment Order → infer from dependencies
+
+## Shared Infrastructure → from AGENTS.md
 
 ### vendor_world_model.md population
 
@@ -202,6 +227,37 @@ Rules:
   docker-compose staging overrides
   Known Edge Cases → from mandate corpus
     (fail2ban patterns, KVM bridge facts, etc.)
+
+---
+
+## Final step — update WORLD_MODEL.md index
+
+After all world_models/ files are created or updated:
+
+```
+  # List what now exists
+  find world_models/ -name "*_world_model.md" | sort
+
+  # Update WORLD_MODEL.md ## World models in this project
+  # Replace the REPLACE placeholder list with the
+  # actual files found:
+  #
+  # → world_models/fleet_world_model.md
+  # → world_models/vendor_world_model.md
+  # → world_models/staging_world_model.md
+  # (etc — one line per file found)
+
+  # If cross-repo pointers were detected during recon
+  # (other fleet repos referenced in AGENTS.md,
+  # docker-compose, or Ansible inventory):
+  # Update ## Cross-repo world models accordingly.
+  # Otherwise leave that section as REPLACE.
+
+  echo "WORLD_MODEL.md index updated"
+  echo ""
+  echo "Verify:"
+  cat WORLD_MODEL.md
+```
 
 ---
 

@@ -155,12 +155,13 @@ forced to continue working until the gate passes.
   "session_id": "…",
   "cwd": "/path/to/project",
   "hook_event_name": "Stop",
-  "total_input_tokens": 42180,
-  "total_output_tokens": 8934,
-  "num_turns": 47,
-  "model": "claude-sonnet-4-6"
+  "stop_hook_active": false
 }
 ```
+
+NOTE: CC does not include token counts in the Stop payload. session_cost.py
+reads HARNESS_ROLE, HARNESS_MANDATE, and HARNESS_MODEL from the environment
+and logs 0 for token counts when CC provides no usage data.
 
 ---
 

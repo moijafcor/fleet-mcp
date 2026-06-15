@@ -56,6 +56,8 @@ def summarise(entries: list[dict]) -> dict:
     by_model   = defaultdict(lambda: {
                    "sessions": 0, "tokens": 0, "cost": 0.0})
     totals     = {"sessions": 0, "tokens": 0, "cost": 0.0}
+    by_context = defaultdict(lambda: {
+                   "sessions": 0, "warned": 0, "avg_pct": 0.0})
 
     for e in entries:
         role     = e.get("role",    "unknown")
@@ -72,11 +74,24 @@ def summarise(entries: list[dict]) -> dict:
             bucket["tokens"]   += tokens
             bucket["cost"]     += cost
 
+        ctx_pct = e.get("context_pct", 0)
+        warned  = e.get("context_warning", False)
+
+        by_context["all"]["sessions"] += 1
+        if warned:
+            by_context["all"]["warned"] += 1
+        by_context["all"]["avg_pct"] = (
+            by_context["all"]["avg_pct"] *
+            (by_context["all"]["sessions"] - 1) +
+            ctx_pct
+        ) / by_context["all"]["sessions"]
+
     return {
         "by_role":    dict(by_role),
         "by_mandate": dict(by_mandate),
         "by_model":   dict(by_model),
         "totals":     totals,
+        "by_context": dict(by_context),
         "entry_count": len(entries),
     }
 
@@ -113,6 +128,20 @@ def print_report(summary: dict) -> None:
         label = mandate[-45:] if len(mandate) > 45 \
                 else mandate
         print(f"    {label:<45}  ${d['cost']:.4f}")
+
+    ctx = summary.get("by_context", {}).get("all", {})
+    if ctx.get("sessions", 0) > 0:
+        print(f"\n  Context size:")
+        print(f"    Sessions with data:  {ctx['sessions']}")
+        print(f"    >150k warnings:      {ctx['warned']}")
+        print(f"    Avg context usage:   {ctx['avg_pct']:.1f}%")
+        if ctx["warned"] > 0:
+            pct = round(ctx['warned'] /
+                        ctx['sessions'] * 100)
+            print(f"    Warning rate:        {pct}%")
+            print(f"    ⚠  High warning rate indicates")
+            print(f"       sessions running too long.")
+            print(f"       Consider /compact mid-session.")
     print()
 
 

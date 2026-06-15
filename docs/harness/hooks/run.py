@@ -33,11 +33,11 @@ def main() -> None:
     event_dir = hooks_root / sys.argv[1]
 
     # Read and validate stdin once; re-feed it to each child.
+    raw = sys.stdin.read()
     try:
-        raw = sys.stdin.buffer.read()
-        json.loads(raw)
-    except (json.JSONDecodeError, OSError, ValueError):
-        sys.exit(0)
+        payload = json.loads(raw) if raw.strip() else {}
+    except (json.JSONDecodeError, ValueError):
+        payload = {}
 
     if not event_dir.is_dir():
         sys.exit(0)
@@ -51,11 +51,12 @@ def main() -> None:
             [sys.executable, str(script)],
             input=raw,
             capture_output=True,
+            text=True,
         )
         if result.stdout:
-            sys.stdout.buffer.write(result.stdout)
+            sys.stdout.write(result.stdout)
         if result.stderr:
-            sys.stderr.buffer.write(result.stderr)
+            sys.stderr.write(result.stderr)
         if result.returncode == 2:
             sys.exit(2)
 

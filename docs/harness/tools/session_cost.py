@@ -122,6 +122,16 @@ def build_entry(args, cost_per_1k: dict) -> dict:
         "duration_seconds":  args.duration_seconds,
         "estimated_cost_usd": estimated_cost,
         "cost_per_1k":       cost_per_1k,
+        "tokens_available":  (args.input_tokens > 0 or
+                              args.output_tokens > 0),
+        "context_size":      args.context_size,
+        "context_pct":       round(
+                               (args.context_size / 200_000) * 100, 1
+                             ) if args.context_size > 0 else 0,
+        "context_warning":   args.context_size > 150_000,
+        # context_warning: True = approaching limit
+        # correlates with increased cost and
+        # THROTTLING / JAIL_TIME risk
     }
 
 
@@ -132,11 +142,17 @@ def main():
     parser.add_argument("--role",             required=True)
     parser.add_argument("--mandate",          default=None)
     parser.add_argument("--model",            required=True)
-    parser.add_argument("--input-tokens",     type=int, required=True)
-    parser.add_argument("--output-tokens",    type=int, required=True)
+    parser.add_argument("--input-tokens",     type=int, default=0)
+    parser.add_argument("--output-tokens",    type=int, default=0)
     parser.add_argument("--tool-calls",       type=int, default=0)
     parser.add_argument("--duration-seconds", type=int, default=0)
     parser.add_argument("--session-id",       default=None)
+    parser.add_argument(
+        "--context-size",
+        type=int,
+        default=0,
+        help="Context window tokens used at session end"
+    )
     args = parser.parse_args()
 
     project_root = find_project_root()
@@ -147,9 +163,18 @@ def main():
 
     write_log_entry(log_path, entry)
 
-    print(f"Session logged: {entry['total_tokens']} tokens "
-          f"(~${entry['estimated_cost_usd']:.4f} USD) "
-          f"→ {log_path.name}")
+    context_str = (
+        f", context: {entry['context_size']:,} tokens "
+        f"({entry['context_pct']}%)"
+        f"{'  ⚠ >150k' if entry['context_warning'] else ''}"
+    ) if entry['context_size'] > 0 else ""
+
+    print(
+        f"Session logged: {entry['total_tokens']} tokens "
+        f"(~${entry['estimated_cost_usd']:.4f} USD)"
+        f"{context_str}"
+        f" → {log_path.name}"
+    )
 
     return 0
 

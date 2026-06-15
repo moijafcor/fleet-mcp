@@ -1035,6 +1035,9 @@ concepts:
       - tool_calls
       - duration_seconds
       - estimated_cost_usd
+      - context_size
+      - context_pct
+      - context_warning
 
   harnessable.TokenBudget:
     type: concept
@@ -2418,6 +2421,37 @@ concepts:
       - harnessable.extends_role
       - harnessable.adds_skills
       - harnessable.requires
+
+  harnessable.SourceOfTruth:
+    type: concept
+    definition: >
+      The declared precedence hierarchy for operational
+      knowledge in harnessable projects. world_models/
+      files are the authoritative source. Claude project
+      memory (~/.claude/projects/{hash}/memory/) is
+      supplementary only — it is written by the model,
+      lives outside the repository, is not version-
+      controlled, and may be arbitrarily stale. When
+      conflict exists between project memory and
+      world_models/, world_models/ takes precedence.
+      Agents must never silently defer to project memory
+      over world_models/ content. Conflicts must be
+      flagged explicitly.
+    precedence:
+      1: world_models/*.md (authoritative)
+      2: AGENTS.md declarations (authoritative)
+      3: WORLD_MODEL.md index (authoritative)
+      4: Claude project memory (supplementary, stale risk)
+    conflict_protocol: >
+      Flag conflict explicitly in output.
+      world_models/ wins.
+      Note stale project memory for operator to update.
+    root_cause: >
+      Claude project memory is implicit — written by
+      the model, outside the repo, not reviewed.
+      world_models/ is explicit — written by humans
+      and the Scout, inside the repo, version-controlled,
+      committed after review.
 
   harnessable.HallmarkAdapter:
     type: harnessable.PackageAdapter
